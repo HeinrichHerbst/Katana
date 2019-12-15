@@ -4,7 +4,11 @@ Katana is currently pre-release. Open-source code under the MIT License will be 
 [Katana Github](https://github.com/HeinrichHerbst/Katana)
 
 # Overview
-Katana is an open-source process-modeling assistant & sectioning program. Katana allows a designer to peer into GDS files and generate two-dimensional Integrated Circuit (IC) cross-sections with the assistance of layer definition information. Additionally, Katana is capable of automatically generating a [FLOOXS](flooxs.ece.ufl.edu/) process-modeling input script. There are three main modules of Katana: Slice, the cross-section generator, Silver Linings, the mesh file to geometry file converter, and Quilt, the geometry stitching module.
+Katana is an open-source process-modeling assistant & sectioning program. Katana allows a designer to peer into GDS files and generate two-dimensional Integrated Circuit (IC) cross-sections with the assistance of layer definition information. Additionally, Katana is capable of automatically generating a [FLOOXS](flooxs.ece.ufl.edu/) process-modeling input script.
+
+[![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
+
+There are three main modules of Katana: Slice, the cross-section generator, Silver Linings, the mesh file to geometry file converter, and Quilt, the geometry stitching module.
 <img src="images/Overview.png" alt="Katana Overview" class="inline"/>
 
 # Slice
