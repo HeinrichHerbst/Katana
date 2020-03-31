@@ -1,0 +1,6 @@
+Note:
+The used parts of the Clipper library have been included in this repo to ease installation.
+The full library is available for download at:
+https://sourceforge.net/projects/polyclipping/files/
+Clipper was created by Angus Johnson
+http://www.angusj.com/delphi/

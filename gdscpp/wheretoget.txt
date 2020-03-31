@@ -1,0 +1,5 @@
+Note:
+The used parts of the Gdscpp library have been included in this repo to ease installation.
+The full library is available as a github repository at
+https://github.com/judefdiv/gdscpp
+The Gdscpp library was created by Jude F. de Villiers and Heinrich F. Herbst
