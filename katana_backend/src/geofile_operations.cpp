@@ -6,6 +6,7 @@
  * Description: Function definitions for FLOOXS for Gmsh .geo geometry file manipulation.
  */
 #include <chrono>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <fstream>
