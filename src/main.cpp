@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     {
         UI::argument_mode(argc, argv);
     }
-
+    UI::print_ln("Katana Exited.");
     return 0;
 }
 

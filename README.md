@@ -1,11 +1,10 @@
 # Documentation Under Construction
-Last updated on 31 March, 2020.
-Katana is currently at version Alpha (0.8T). Commits will be published to the github page:
+Last updated on 18 April, 2020.
+Katana is currently at version 0.9T. Commits will be published to the github page:
 [Katana Github](https://github.com/HeinrichHerbst/Katana)
 
 # Overview
-Katana is an open-source process-modeling assistant & sectioning program. Katana allows a designer to peer into GDS files and generate two-dimensional Integrated Circuit (IC) cross-sections with the assistance of layer definition information. Additionally, Katana is capable of automatically generating a [FLOOXS](flooxs.ece.ufl.edu/) process-modeling input script. Katana can also combine multiple two-dimensional Gmsh .geo files and convert .msh files back into .geo files (mesh removal).
-
+Katana is an open-source process-modeling assistant & sectioning program. Katana allows a designer to peer into GDS files and generate two-dimensional Integrated Circuit (IC) cross-sections with the assistance of layer definition information. Additionally, Katana is capable of automatically generating a [FLOOXS](flooxs.ece.ufl.edu/) process-modeling input script. Katana can also combine multiple two-dimensional Gmsh .geo files and convert .msh files back into .geo files (mesh removal). The video below demonstrates typical use of the software. The video is of a pre-release version. See the Usage section for instructions on how to use the newest version.
 [![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
 
 # Usage
@@ -18,7 +17,11 @@ The following input arguments may be used:
 
     -version
         Print the current version of Katana.
+```
 
+Katana is capable of generating cross sections of circuits from mask and process information:
+
+```
     -slice
         Generate a 2D cross-sectional slice through the IC.
         The GDSII format layout file, as well as a layer
@@ -33,8 +36,31 @@ The following input arguments may be used:
         Two files are produced; a geometry file and .tcl file.
         The TCL file should be run by FLOOXS to generate a
         cross-section.
+```
+
+Katana assists in combining multiple cross-sections in order to create a three-dimensional model.
+
+```
+    -modeling -m
+        Merges two specified geometry files in the following manner:
+            1: Imports both files into memory.
+            2: Performs coherence check on both file data sets.
+            3: Simplifies both file data sets.
+            4: Merges both data sets together.
+            5: Performs coherence check on the merged data.
+            6: Simplifies the merged data.
+            7: Writes merged data to specified output file.
+        Please see the manual for the Katana definition of coherence
+        and simplification and why they are necessary.
+
+        Format <Katana> <modeling> <merge command>
+               <first file> <second file> <specified output>
+
+        e.g. ./Katana -modeling -m data/left.geo data/right.geo
+                      -data/combined.geo
 
     -modeling -sa
+        (legacy. Replaced with more versatile merge above)
         Simple append: Joins two 2D geo-files. Append the second
         to the first. Support for points and lines only.
 
@@ -45,18 +71,47 @@ The following input arguments may be used:
         The optional arguments overrides the characteristic length
         of all points. See char. length in Gmsh documentation.
 
-    -meshops
-        Meshfile operations. Currently, the only meshfile operation
-        is conversion of a Gmsh version 2 .msh file back into a .geo file.
-        Replaces all mesh triangles with a physical surface. Maintains
-        boundaries and contours.
+    -modeling -t
+        Translate entire .geo file. Also perform coherence
+        optimization and file simplification.
 
-        Format: ./Katana <mesh file operations>
-        <mesh file path> <geo output path>
+        Format <Katana> <modeling> <translate command>
+        <target file> <delta x> <delta y> <delta z>
 
-        e.g. ./Katana -meshops data/flooxs_out.msh data/flooxs_out.geo
+        e.g. ./Katana -modeling -t data/shape.geo 1000 0 1000
+
+    -modeling -r
+        Rotate entire .geo file. Also perform coherence optimization
+        and file simplification. Requires an origin of rotation and
+        rotation angles in degrees per axis.
+
+        Format <Katana> <modeling> <rotate command>
+        <target file> <origin x> <origin y> <origin z>
+        <theta x> <theta y> <theta z>
+
+        e.g. ./Katana -modeling -r data/shape.geo 0 0 0 30 30 30
 ```
 
+Katana has a Gmsh mesh module capable of mesh volume calculation, as well as conversion of FLOOXS meshes back into a geometry format representation (.geo).
+
+```
+    -meshops -s
+        This is a legacy function since FLOOXS now supports Gmsh .geo
+        contour exporting. This function converts 2D mesh surfaces
+        into physical surfaces with the mesh triangles removed.
+
+        Format <Katana> <mesh file operations> <Silver Lining Command>
+        <target mesh> <geo output path>
+
+        e.g. ./Katana -meshops -s data/f_out.msh data/convert.geo
+
+    -meshops -v
+        Calculate all Gmsh .msh \"Physical Volume\" values in mesh file.
+
+        Format <Katana> <mesh file operations> <Volume Command>
+
+        e.g. ./Katana -meshops -v data/example.msh"
+```
 
 # Dependencies
 Katana makes use of [Boost](https://www.boost.org/doc/libs/1_66_0/more/getting_started/unix-variants.html) functions and therefore requires the library present before building.
@@ -65,9 +120,11 @@ Katana is built in C++ with [CMake](https://cmake.org/install/) and utilizes [th
 
 Katana makes use of the [Gdscpp](https://github.com/judefdiv/gdscpp) library in order to read GDS files. Four your convenience, the relevant source files are included in this repository.
 
-Katana was coded with elements of C++17 and therefore requires a suitable compiler. In order to build on CentOS 7, I recommend using Software Collections Developer Toolset 8. The toolset allows you to avoid having to build a gcc version greater than 7 from source as this process takes around 4 hours on a modern computer. Once Katana is built you can simply turn the toolset off again.
+Katana was coded with elements of C++17 and therefore requires a suitable compiler.
 
 # Installation on CentOS 7
+ In order to build Katana easily on CentOS 7, it is recommended to use Software Collections Developer Toolset 8. The toolset allows one to avoid having to build a gcc version greater than 7 from source as this process takes around 4 hours on a modern computer. Once Katana is built you can simply turn the toolset off again.
+
 ```
 sudo yum -y install centos-release-scl-rh devtoolset-8 boost-devel git
 git clone git@github.com:HeinrichHerbst/Katana.git

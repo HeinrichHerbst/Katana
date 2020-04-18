@@ -264,10 +264,23 @@ int begin_processing(std::string meshpath, std::string geopath)
                 << faces_iterator->second.parent_materials[1] <<"]\n";
                 faces_iterator++;
             }
-            exit = swap_axes(nodes_map);
-            exit = plot_geometry(nodes_map, faces_map, geopath);
-            exit = generate_shapes(faces_map, materials_map, geopath);
-            log_file << "Program reached end of conversion with exit state " << exit << ".\n";
+            int err_count = 0;
+            if(swap_axes(nodes_map)==EXIT_FAILURE)
+            {
+                log_file << "Error: Axis swap failed \n";
+                err_count++;
+            }
+            if(plot_geometry(nodes_map, faces_map, geopath)==EXIT_FAILURE)
+            {
+                log_file << "Error: Geometry plotting failed.\n";
+                err_count++;
+            }
+            if(generate_shapes(faces_map, materials_map, geopath)==EXIT_FAILURE)
+            {
+                log_file << "Error: Face generation failed.\n";
+                err_count++;
+            }
+            log_file << "Program reached end of conversion with " << err_count << " errors.\n";
             log_file.close();
             return exit;
         }

@@ -9,11 +9,161 @@
 #include <ctime>
 #include "drawing.hpp"
 #include "gdsCpp.hpp"
+#include "geofile_operations.hpp"
 #include "flooxs_gen.hpp"
 #include "ldf_process.hpp"
 #include "stitching.hpp"
 #include "t_interface.hpp"
 #include "meshfile_operations.hpp"
+#include "new_meshfile_operations.hpp"
+
+//----------------------------------------------------------
+namespace ARG_MODE
+{
+    enum string_code {
+        eDefault,
+        eHelp,
+        eMeshops,
+        eModeling,
+        eSlice,
+        eVersion
+    };
+    string_code hashit (std::string const& inString) {
+        if ((inString == "-Help")||(inString == "-help"))   return eHelp;
+        if ((inString == "-Meshops")||(inString == "-meshops")) return eMeshops;
+        if ((inString == "-Slice")||(inString == "-slice")) return eSlice;
+        if ((inString == "-Modeling")||(inString == "-modeling")) return eModeling;
+        if (    (inString == "-Version")
+            ||  (inString == "-version")
+            ||  (inString == "--version")
+            ||  (inString == "-v") ) return eVersion;
+        return eDefault;
+    }
+}
+void UI::argument_mode(int &argc, char *argv[])
+{
+    print_welcome();
+    ARG_MODE::string_code input_arg = ARG_MODE::hashit(argv[1]);
+    switch (input_arg)
+    {
+    case ARG_MODE::eHelp:
+        print_help();
+        break;
+    case ARG_MODE::eMeshops:
+        gather_meshops_arg(argc, argv);
+        break;
+    case ARG_MODE::eModeling:
+        gather_modeling_arg(argc, argv);
+        break;
+    case ARG_MODE::eSlice:
+        gather_slice_arg(argc, argv);
+        break;
+    case ARG_MODE::eVersion:
+        break;
+    default:
+        print_ln("Unrecognized input argument. Try \"-help\" or interactive mode.");
+        break;
+    }
+}
+//----------------------------------------------------------
+void UI::interactive_mode()
+{
+    print_welcome();
+    print_ln(" Katana can be quickly run with input arguments or be run interactively.");
+    print_ln(" Katana is currently running in interactive mode.");
+    skip_ln();
+    main_menu();
+}
+
+void UI::main_menu()
+{
+    print_ln(" Please enter a number followed by return:");
+    skip_ln();
+    print_ln(" 1 - Generate FLOOXS input script.");
+    print_ln(" 2 - Manipulate model geometry.");
+    print_ln(" 3 - Mesh file operations.");
+    print_ln(" 4 - Help with Katana.");
+    int choice = get_choice();
+    bool accepted = false;
+    while (accepted == false)
+    {
+        switch (choice)
+        {
+        case 1:
+            gather_slice_interactive();
+            accepted = true;
+            break;
+        case 2:
+            gather_modeling_interactive();
+            accepted = true;
+            break;
+        case 3:
+            gather_mesh_interactive();
+            accepted = true;
+            break;
+        case 4:
+            print_help();
+            accepted = true;
+            break;
+        default:
+            clear_screen();
+            print_ln("Unrecognized input. Please try again.");
+            print_ln(" 1 - Generate FLOOXS input script.");
+            print_ln(" 2 - Manipulate model geometry.");
+            print_ln(" 3 - Mesh file operations.");
+            print_ln(" 4 - Help with Katana.");
+            choice = get_choice();
+            break;
+        }
+    }
+}
+
+//Quilt ----------------------------------------------------
+enum quilt_code
+{
+    eProblem,
+    eMerge_simple,
+    eSimple_append,
+    eTranslate,
+    eRotate
+};
+quilt_code hash_quilt (std::string const& inString)
+{
+    if (inString == "-m")   return eMerge_simple;
+    if (inString == "-r")   return eRotate;
+    if (inString == "-sa")  return eSimple_append;
+    if (inString == "-t")   return eTranslate;
+    return eProblem;
+}
+void UI::gather_modeling_arg(int &argc, char *argv[])
+{
+    if (argc>3)
+    {
+        quilt_code second_arg = hash_quilt(argv[2]);
+        switch (second_arg)
+        {
+            case eMerge_simple:
+                execute_simple_merge(argc, argv);
+                break;
+            case eRotate:
+                execute_rotate(argc,argv);
+                break;
+            case eSimple_append:
+                execute_simple_append(argc, argv);
+                break;
+            case eTranslate:
+                execute_translate(argc, argv);
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        print_ln("Error: Invalid argument count for modeling.");
+    }
+}
+//----------------------------------------------------------
 
 void UI::print_welcome()
 {
@@ -38,51 +188,6 @@ void UI::print_version()
     std::cout << "Katana is currently at version " << (CURRENT_VERSION) << "T." << std::endl;
 }
 
-void UI::main_menu()
-{
-    print_ln(" Please enter a number followed by return:");
-    skip_ln();
-    print_ln(" 1 - Generate FLOOXS input script.");
-    print_ln(" 2 - Manipulate model geometry.");
-    print_ln(" 3 - Mesh file operations.");
-    print_ln(" 4 - Help with Katana.");
-    int choice = get_choice();
-    switch (choice)
-    {
-    case 1:
-        gather_slice_interactive();
-        break;
-    case 2:
-        gather_modeling_interactive();
-        break;
-    case 3:
-        gather_mesh_interactive();
-        break;
-    case 4:
-        print_help();
-        break;
-    default:
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        print_ln("Unrecognized input. Please try again.");
-        main_menu();
-        break;
-    }
-}
-
 int UI::get_choice()
 {
     char mychar;
@@ -91,61 +196,6 @@ int UI::get_choice()
     return choice;
 }
 
-void UI::interactive_mode()
-{
-    print_welcome();
-    print_ln(" Katana can be quickly run with input arguments or be run interactively.");
-    print_ln(" Katana is currently running in interactive mode.");
-    skip_ln();
-    main_menu();
-}
-
-//----------------------------------------------------------
-enum string_code {
-    eDefault,
-    eHelp,
-    eMeshops,
-    eModeling,
-    eSlice,
-    eVersion
-};
-string_code hashit (std::string const& inString) {
-    if ((inString == "-Help")||(inString == "-help"))   return eHelp;
-    if ((inString == "-Meshops")||(inString == "-meshops")) return eMeshops;
-    if ((inString == "-Slice")||(inString == "-slice")) return eSlice;
-    if ((inString == "-Modeling")||(inString == "-modeling")) return eModeling;
-    if (    (inString == "-Version")
-        ||  (inString == "-version")
-        ||  (inString == "--version")
-        ||  (inString == "-v") ) return eVersion;
-    return eDefault;
-}
-void UI::argument_mode(int &argc, char *argv[])
-{
-    print_welcome();
-    string_code input_arg = hashit(argv[1]);
-    switch (input_arg)
-    {
-    case eHelp:
-        print_help();
-        break;
-    case eMeshops:
-        gather_meshops_arg(argc, argv);
-        break;
-    case eModeling:
-        gather_modeling_arg(argc, argv);
-        break;
-    case eSlice:
-        gather_slice_arg(argc, argv);
-        break;
-    case eVersion:
-        break;
-    default:
-        print_ln("Unrecognized input argument. Try \"-help\" or interactive mode.");
-        break;
-    }
-}
-//----------------------------------------------------------
 void UI::print_help()
 {
     print_ln("-- Help --");
@@ -153,9 +203,6 @@ void UI::print_help()
     print_version();
     print_ln("Documentation can be found in the included README.md");
     print_ln("or at heinrichherbst.github.io/Katana");
-    skip_ln();
-    print_ln("Katana is still under development. Some features are still To Be Implemented");
-    print_ln("[TBI]. These will be available by the final release (ETA 31 May 2020).");
     skip_ln();
     print_ln("Katana can be executed with input arguments run interactively.");
     print_ln("If Katana is run with no input arguments, interactive mode is started.");
@@ -183,23 +230,71 @@ void UI::print_help()
     print_ln(" \"-modeling\"      Geometrical manipulations module. Extra arguments allow");
     print_ln("                  for direct file processing.");
     skip_ln();
-    print_ln(" ^ -sa                Simple append: Joins two 2D geo-files. Append the second");
-    print_ln("                      to the first. Support for points and lines only.");
-    print_ln("                      Format: ./Katana <modeling> <simple append> <first .geo>");
-    print_ln("                       <second.geo> <output.geo> <char. len. override>(optional)");
-    print_ln("                      e.g.    ./Katana -modeling -sa left.geo right.geo both.geo");
-    print_ln("                      The optional arguments overrides the characteristic length");
-    print_ln("                      of all points. See char. length in Gmsh documentation.");
+    print_ln(" ^ -m             Merges two specified geometry files in the following manner:");
+    print_ln("                    1: Imports both files into memory.");
+    print_ln("                    2: Performs coherence check on both file data sets.");
+    print_ln("                    3: Simplifies both file data sets.");
+    print_ln("                    4: Merges both data sets together.");
+    print_ln("                    5: Performs coherence check on the merged data.");
+    print_ln("                    6: Simplifies the merged data.");
+    print_ln("                    7: Writes merged data to specified output file.");
     skip_ln();
-    print_ln(" ^ -m                 Merge two geo files.                [TBI]");
+    print_ln("                  Refer to manual for the Katana definition of coherence");
+    print_ln("                  and simplification and why they are necessary.");
     skip_ln();
-    print_ln(" ^ -t                 Translate entire file.              [TBI]");
+    print_ln("                  Format <Katana> <modeling> <merge command>");
+    print_ln("                  <first file> <second file> <specified output>");
     skip_ln();
-    print_ln(" ^ -r                 Rotate entire file.                 [TBI]");
+    print_ln("                  e.g. ./Katana -modeling -m data/left.geo data/right.geo");
+    print_ln("                  -data/combined.geo");
     skip_ln();
-    print_ln(" \"-meshops\"       Meshfile manipulations module.      [TBI]");
+    print_ln(" ^ -sa            Simple append: Joins two 2D geo-files. Append the second");
+    print_ln("                  to the first. Support for points and lines only.");
     skip_ln();
-    print_ln(" ^ -rm                Remove mesh and preserve contours.  [TBI]");
+    print_ln("                  Format: ./Katana <modeling> <simple append> <first .geo>");
+    print_ln("                  <second.geo> <output.geo> <char. len. override>(optional)");
+    print_ln("                  e.g.    ./Katana -modeling -sa left.geo right.geo both.geo");
+    print_ln("                  The optional arguments overrides the characteristic length");
+    print_ln("                  of all points. See char. length in Gmsh documentation.");
+    skip_ln();
+    print_ln(" ^ -t             Translate entire .geo file. Also perform coherence");
+    print_ln("                  optimization and file simplification.");
+    skip_ln();
+    print_ln("                  Format <Katana> <modeling> <translate command>");
+    print_ln("                  <target file> <delta x> <delta y> <delta z>");
+    skip_ln();
+    print_ln("                  e.g. ./Katana -modeling -t data/shape.geo ");
+    print_ln("                  1000 0 1000");
+    skip_ln();
+    print_ln(" ^ -r             Rotate entire .geo file. Also perform coherence");
+    print_ln("                  optimization and file simplification. Angles in");
+    print_ln("                  degrees.");
+    skip_ln();
+    print_ln("                  Format <Katana> <modeling> <rotate command>");
+    print_ln("                  <target file> <origin x> <origin y> <origin z>");
+    print_ln("                  <theta x> <theta y> <theta z>");
+    skip_ln();
+    print_ln("                  e.g. ./Katana -modeling -r data/shape.geo");
+    print_ln("                  0 0 0 30 30 30");
+    skip_ln();
+    print_ln(" \"-meshops\"       Meshfile manipulations module.");
+    skip_ln();
+    print_ln(" ^ -s {Legacy}    Convert FLOOXS exported 2D msh. to .geo contour.");
+    print_ln("                  This function converts 2D mesh surfaces into");
+    print_ln("                  physical surfaces with the mesh triangles removed.");
+    print_ln("                  This is a legacy function since FLOOXS now supports");
+    print_ln("                  Gmsh .geo contour exporting.");
+    skip_ln();
+    print_ln("                  Format <Katana> <mesh file operations> <Silver Lining Command>");
+    print_ln("                  <target mesh> <geo output path> ");
+    skip_ln();
+    print_ln("                  e.g. ./Katana -meshops -s data/f_out.msh data/convert.geo");
+    skip_ln();
+    print_ln(" ^ -v             Calculate all Gmsh .msh \"Physical Volume\" values in mesh file.");
+    skip_ln();
+    print_ln("                  Format <Katana> <mesh file operations> <Volume Command>");
+    skip_ln();
+    print_ln("                  e.g. ./Katana -meshops -v data/example.msh");
     skip_ln();
     print_ln("If you have run into a bug or issue, please log it at");
     print_ln("github.com/HeinrichHerbst/Katana/issues");
@@ -212,6 +307,14 @@ void UI::print_ln(std::string line)
 void UI::skip_ln()
 {
     std::cout << std::endl;
+}
+
+void UI::clear_screen()
+{
+    for (auto i = 0; i < 15; i++)
+    {
+        skip_ln();
+    }
 }
 
 // Gather the slice instructions from an argument.
@@ -234,59 +337,41 @@ void UI::gather_slice_arg(int &argc, char *argv[])
     }
 }
 
-//Quilt ----------------------------------------------------
-enum quilt_code
-{
-    eProblem,
-    eMerge_additional,
-    eMerge_simple,
-    eSimple_append,
-    eTranslate,
-    eRotate
-};
-quilt_code hash_quilt (std::string const& inString)
-{
-    if (inString == "-m")   return eMerge_simple;
-    if (inString == "-ma")  return eMerge_additional;
-    if (inString == "-r")   return eRotate;
-    if (inString == "-sa")  return eSimple_append;
-    if (inString == "-t")   return eTranslate;
-    return eProblem;
-}
-
 void UI::gather_modeling_interactive()
 {
     print_ln("What would you like to do?");
     print_ln("Please enter a number followed by return:");
     print_ln(" 1 - Append one 2D geofile to another.");
-    // print_ln(" 2 - Merge two geo files.");
-    // print_ln(" 3 - Translate entire geo file");
-    // print_ln(" 4 - Rotate entire geo file");
-    int choice = get_choice();
-    switch (choice)
+    print_ln(" 2 - Merge two geo files.");
+    print_ln(" 3 - Translate entire geo file.");
+    print_ln(" 4 - Rotate entire geo file.");
+    bool answered = false;
+    while (answered == false)
     {
-    case 1:
-        gather_append_interactive();
-        break;
-    default:
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        print_ln("Unrecognized input");
-        gather_modeling_interactive();
-        break;
+        int choice = get_choice();
+        switch (choice)
+        {
+        case 1:
+            gather_append_interactive();
+            answered = true;
+            break;
+        case 2:
+            gather_merge_interactive();
+            answered = true;
+            break;
+        case 3:
+            gather_translate_interactive();
+            answered = true;
+            break;
+        case 4:
+            gather_rotate_interactive();
+            answered = true;
+            break;
+        default:
+            clear_screen();
+            print_ln("Unrecognized input");
+            break;
+        }
     }
 }
 
@@ -294,38 +379,105 @@ void UI::gather_mesh_interactive()
 {
     print_ln("What would you like to do?");
     print_ln("Please enter a number followed by return:");
-    print_ln(" 1 - Convert Meshfile into .geo file.");
-    int choice = get_choice();
-    switch (choice)
+    print_ln(" 1 - Convert FLOOXS 2D mesh output into .geo contour.");
+    print_ln(" 2 - Compute volumes of .msh \"Physical Volumes\".");
+    bool answered = false;
+    while (answered==false)
     {
-    case 1:
-        gather_silver_linings_interactive();
-        break;
-    default:
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        skip_ln();
-        print_ln("Unrecognized input");
-        gather_mesh_interactive();
-        break;
+        int choice = get_choice();
+        switch (choice)
+        {
+        case 1:
+            gather_silver_linings_interactive();
+            answered = true;
+            break;
+        case 2:
+            gather_volume_calc_interactive();
+            answered = true;
+            break;
+        default:
+            clear_screen();
+            print_ln("Unrecognized input");
+            break;
+        }
     }
 }
+
+void UI::gather_volume_calc_interactive()
+{
+    std::string msh_in;
+    print_ln("Please enter path to .msh file:");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+    getline(std::cin, msh_in);
+    print_ln("Using \"" + msh_in + "\" as mesh file path.");
+    execute_volume_calculator(msh_in);
+}
+
+void UI::gather_rotate_interactive()
+{
+    std::string geo_in, geo_out, ori_x, ori_y, ori_z, theta_x, theta_y, theta_z;
+    print_ln("Please enter path to .geo file:");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+    getline(std::cin, geo_in);
+    print_ln("Using \"" + geo_in + "\" as mesh file path.");
+    skip_ln();
+    print_ln("Please enter output path:");
+    print_ln("(e.g. data/output.geo)");
+    getline(std::cin, geo_out);
+    std::cout<<"Using \"" << geo_out << "\" as output file path."<< std::endl;
+    print_ln("Please enter X co-ordintate of origin of rotation:");
+    getline(std::cin, ori_x);
+    print_ln("Please enter Y co-ordintate of origin of rotation:");
+    getline(std::cin, ori_y);
+    print_ln("Please enter Z co-ordintate of origin of rotation:");
+    getline(std::cin, ori_z);
+    print_ln("Enter degrees to rotate about X-axis:");
+    getline(std::cin, theta_x);
+    print_ln("Enter degrees to rotate about Y-axis:");
+    getline(std::cin, theta_y);
+    print_ln("Enter degrees to rotate about Z-axis:");
+    getline(std::cin, theta_z);
+    if ( GEO::is_e_notation(ori_x)&&
+         GEO::is_e_notation(ori_y)&&
+         GEO::is_e_notation(ori_z)&&
+         GEO::is_e_notation(theta_x)&&
+         GEO::is_e_notation(theta_y)&&
+         GEO::is_e_notation(theta_z) )
+    {
+        double d_ox, d_oy, d_oz, d_tx, d_ty, d_tz;
+        d_ox = std::stod(ori_x);
+        d_oy = std::stod(ori_y);
+        d_oz = std::stod(ori_z);
+        d_tx = std::stod(theta_x);
+        d_ty = std::stod(theta_y);
+        d_tz = std::stod(theta_z);
+        GEO::geofile input_geo;
+        if (input_geo.import_geofile(geo_in)==EXIT_SUCCESS)
+        {
+            input_geo.make_coherent();
+            input_geo.simplify_data();
+            if (input_geo.rotate_data(d_ox, d_oy, d_oz, d_tx, d_ty, d_tz)==EXIT_SUCCESS)
+            {
+                print_ln("Rotate succeeded.");
+                if (input_geo.export_geofile(geo_out)==EXIT_SUCCESS)
+                    print_ln("Export succeeded.");
+                else
+                    print_ln("Error: Export failed.");
+            }
+            else
+                print_ln("Error: Rotate failed.");
+        }
+        else
+            print_ln("Error: Import failed.");
+    }
+    else
+        print_ln("Error: Invalid rotation input.");
+}
+
 void UI::gather_silver_linings_interactive()
 {
     std::string mesh_in, geo_out;
-    print_ln("Please enter path to .msh file:");
+    print_ln("Please enter path to FLOOX exported .msh file:");
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
     getline(std::cin, mesh_in);
     std::cout<<"Using \"" << mesh_in << "\" as mesh file path."<< std::endl;
@@ -365,6 +517,106 @@ void UI::gather_append_interactive()
     execute_simple_append_interactive(first_geo,second_geo,output_geo,char_len);
 }
 
+void UI::gather_merge_interactive()
+{
+    std::string first_geo, second_geo, output_geo;
+    print_ln("Please enter path to first .geo file:");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+    getline(std::cin, first_geo);
+    std::cout<<"Using \"" << first_geo << "\" as first .geo file path."<< std::endl;
+    skip_ln();
+    print_ln("Please enter path to second .geo file:");
+    getline(std::cin, second_geo);
+    std::cout<<"Using \"" << second_geo << "\" as second .geo file path."<< std::endl;
+    skip_ln();
+    print_ln("Please enter path name to output .geo file:");
+    getline(std::cin, output_geo);
+    std::cout<<"Using \"" << second_geo << "\" as output .geo file path."<< std::endl;
+    GEO::geofile primary_geofile, secondary_geofile;
+        if ( primary_geofile.import_geofile(first_geo) == EXIT_SUCCESS )
+        {
+            print_ln("Imported primary geometry file successfully.");
+            if(secondary_geofile.import_geofile(second_geo) == EXIT_SUCCESS)
+            {
+                print_ln("Imported secondary geometry file successfully.");
+                if (primary_geofile.merge_with(secondary_geofile)==EXIT_SUCCESS)
+                {
+                    std::string export_path = output_geo;
+                    if(primary_geofile.export_geofile(export_path)==EXIT_SUCCESS)
+                        print_ln("Export returned success.");
+                    else
+                        print_ln("Export returned failure.");
+                }
+                else
+                {
+                    print_ln("Error: Merge Operation Failed.");
+                }
+            }
+            else
+            {
+                print_ln("Error: Import of second file failed.");
+            }
+        }
+        else
+        {
+            print_ln("Error: Import of first file failed.");
+        }
+}
+
+void UI::gather_translate_interactive()
+{
+    std::string first_geo, output_geo, del_x, del_y, del_z;
+    print_ln("Please enter path to .geo file:");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+    getline(std::cin, first_geo);
+    std::cout<<"Using \"" << first_geo << "\" as .geo file path."<< std::endl;
+    skip_ln();
+    print_ln("Please enter export .geo path:");
+    getline(std::cin, output_geo);
+    std::cout<<"Using \"" << output_geo << "\" as export file path."<< std::endl;
+    print_ln("Please enter x-offset");
+    getline(std::cin, del_x);
+    print_ln("Please enter y-offset");
+    getline(std::cin, del_y);
+    print_ln("Please enter z-offset");
+    getline(std::cin, del_z);
+    print_ln("Using \"" + del_x + "\" as x offset.");
+    print_ln("Using \"" + del_y + "\" as y offset.");
+    print_ln("Using \"" + del_z + "\" as z offset.");
+    if( ( GEO::is_e_notation(del_x) )&&
+        ( GEO::is_e_notation(del_y) )&&
+        ( GEO::is_e_notation(del_y) ) )
+    {
+        GEO::geofile input;
+        if (input.import_geofile(first_geo)==EXIT_SUCCESS)
+        {
+            print_ln("Import succeeded.");
+            double delta_x = std::stod(del_x);
+            double delta_y = std::stod(del_y);
+            double delta_z = std::stod(del_z);
+            if (input.translate_data(delta_x, delta_y, delta_z)==EXIT_SUCCESS)
+            {
+                if(input.export_geofile(output_geo)==EXIT_SUCCESS)
+                    print_ln("Export succeeded.");
+                else
+                    print_ln("Error: Export failed.");
+            }
+            else
+            {
+                print_ln("Error: Translation failed.");
+            }
+        }
+        else
+        {
+            print_ln("Error: Import failed.");
+        }
+    }
+    else
+    {
+        print_ln("Error: Incorrect number format.");
+    }
+}
+
 void UI::execute_simple_append_interactive( std::string first_geo,
                                             std::string second_geo,
                                             std::string output_geo,
@@ -372,32 +624,6 @@ void UI::execute_simple_append_interactive( std::string first_geo,
 {
     simple_append(first_geo, second_geo, output_geo, char_len);
 }
-
-void UI::gather_modeling_arg(int &argc, char *argv[])
-{
-    quilt_code second_arg = hash_quilt(argv[2]);
-    switch (second_arg)
-    {
-    case eMerge_simple:
-        print_ln("Simple merging is still [TBI]");
-        break;
-    case eMerge_additional:
-        print_ln("Merge append is still [TBI]");
-        break;
-    case eRotate:
-        print_ln("Geofile rotation is still [TBI]");
-        break;
-    case eSimple_append:
-        execute_simple_append(argc, argv);
-        break;
-    case eTranslate:
-        print_ln("Geofile translation is still [TBI]");
-        break;
-    default:
-        break;
-    }
-}
-//----------------------------------------------------------
 
 void UI::execute_simple_append(int &argc, char *argv[])
 {
@@ -419,13 +645,74 @@ void UI::execute_simple_append(int &argc, char *argv[])
     }
 }
 
+void UI::execute_simple_merge(int &argc, char *argv[])
+{
+    if ( argc == 6 )
+    {
+        GEO::geofile primary_geofile, secondary_geofile;
+        if ( primary_geofile.import_geofile(argv[3]) == EXIT_SUCCESS )
+        {
+            print_ln("Imported primary geometry file successfully.");
+            if(secondary_geofile.import_geofile(argv[4]) == EXIT_SUCCESS)
+            {
+                print_ln("Imported secondary geometry file successfully.");
+                if (primary_geofile.merge_with(secondary_geofile)==EXIT_SUCCESS)
+                {
+                    std::string export_path = argv[5];
+                    if(primary_geofile.export_geofile(export_path)==EXIT_SUCCESS)
+                        print_ln("Export returned success.");
+                    else
+                        print_ln("Export returned failure.");
+                }
+                else
+                {
+                    print_ln("Error: Merge Operation Failed.");
+                }
+            }
+            else
+            {
+                print_ln("Error: Import of second file failed.");
+            }
+        }
+        else
+        {
+            print_ln("Error: Import of first file failed.");
+        }
+    }
+    else
+    {
+        std::cout << "Error: Expected 5 arguments, got " << argc << "." << std::endl;
+    }
+
+}
+
 //Silver linings -----------------------------------
+// -s for silver linings
+// -v for volume calculation
+// 0        1       2   3
+// katana -meshops -v data/cube_house_v2.msh
 void UI::gather_meshops_arg(int &argc, char *argv[])
 {
-    if (argc == 4)
+    if (argc > 3)
     {
-        std::string in_msh = argv[2], out_geo = argv[3];
-        execute_silver_linings(in_msh,  out_geo);
+        std::string arg_check = argv[2];
+        if (arg_check=="-s")
+        {
+            if (argc>4)
+            {
+                std::string in_msh = argv[3], out_geo = argv[4];
+                execute_silver_linings(in_msh,  out_geo);
+            }
+            else
+            {
+                print_ln("Error: Incorrect argument count.");
+            }
+        }
+        else if(arg_check=="-v")
+        {
+            std::string in_msh = argv[3];
+            execute_volume_calculator(in_msh);
+        }
     }
     else
     {
@@ -545,3 +832,101 @@ void UI::execute_slice(std::string gds_path, std::string ldf_path, int x1, int y
     }
 }
 
+// ./Katana -modeling -t data/input.geo data/output.geo 1 1 1
+void UI::execute_translate(int &argc, char *argv[])
+{
+    if (argc!=8)
+    {
+        print_ln("Error: incorrect argument count.");
+    }
+    else
+    {
+        std::string input_path   = argv[3];
+        std::string outfile_path = argv[4];
+        GEO::geofile primary_geofile;
+        if ((GEO::is_e_notation(argv[5]))&&
+            (GEO::is_e_notation(argv[6]))&&
+            (GEO::is_e_notation(argv[7])))
+        {
+            double del_x = std::stod(argv[5]);
+            double del_y = std::stod(argv[6]);
+            double del_z = std::stod(argv[7]);
+            if(primary_geofile.import_geofile(input_path)==EXIT_SUCCESS)
+            {
+                primary_geofile.make_coherent();
+                primary_geofile.simplify_data();
+                if(primary_geofile.translate_data(del_x, del_y, del_z)==EXIT_SUCCESS)
+                {
+                    print_ln("Translation completed.");
+                    if(primary_geofile.export_geofile(outfile_path)==EXIT_SUCCESS)
+                        print_ln(("File exported as "+outfile_path));
+                    else
+                        print_ln("Error: Export failed.");
+                }
+                else
+                    print_ln("Error: Translation failed.");
+            }
+            else
+                print_ln("Import of geofile failed.");
+        }
+        else
+            print_ln("Error: Shifting parameters unrecognized. Terminating.");
+    }
+}
+
+//      ./Katana -modeling -r in.geo out.geo 0 0 0 10 10 10
+//      1        2          3 4      5       6 7 8 9  10 11
+//argv  0        1          2 3      4       5 6 7 8  9  10
+void UI::execute_rotate(int &argc, char *argv[])
+{
+    if (argc!=11)
+    {
+        print_ln("Error: incorrect argument count.");
+    }
+    else
+    {
+        std::string input_path   = argv[3];
+        std::string outfile_path = argv[4];
+        GEO::geofile primary_geofile;
+        if ((GEO::is_e_notation(argv[5]))&&
+            (GEO::is_e_notation(argv[6]))&&
+            (GEO::is_e_notation(argv[7]))&&
+            (GEO::is_e_notation(argv[8]))&&
+            (GEO::is_e_notation(argv[9]))&&
+            (GEO::is_e_notation(argv[10])))
+        {
+            double ori_x = std::stod(argv[5]);
+            double ori_y = std::stod(argv[6]);
+            double ori_z = std::stod(argv[7]);
+            double theta_x = std::stod(argv[8]);
+            double theta_y = std::stod(argv[9]);
+            double theta_z = std::stod(argv[10]);
+            if(primary_geofile.import_geofile(input_path)==EXIT_SUCCESS)
+            {
+                if(primary_geofile.rotate_data( ori_x,   ori_y,   ori_z,
+                                                theta_x, theta_y, theta_z)==EXIT_SUCCESS)
+                {
+                    print_ln("Rotation completed.");
+                    if(primary_geofile.export_geofile(outfile_path)==EXIT_SUCCESS)
+                        print_ln(("File exported as "+outfile_path));
+                    else
+                        print_ln("Error: Export failed.");
+                }
+                else
+                    print_ln("Error: Translation failed.");
+            }
+            else
+                print_ln("Import of geofile failed.");
+        }
+        else
+            print_ln("Error: Shifting parameters unrecognized. Terminating.");
+    }
+}
+
+void UI::execute_volume_calculator(const std::string &mesh_in)
+{
+    MSH::mesh_file in_mesh;
+    if (in_mesh.import_meshfile(mesh_in)) print_ln("Error: Mesh Import failed.");
+    in_mesh.print_volumes();
+    print_ln("Volume calculation ended.");
+}

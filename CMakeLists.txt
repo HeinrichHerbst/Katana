@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(Katana VERSION 0.8.0)
+project(Katana VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -42,9 +42,11 @@ add_library(katana_backend
             katana_backend/src/flooxs_gen.cpp
             katana_backend/src/ldf_process.cpp
             katana_backend/src/meshfile_operations.cpp
+            katana_backend/src/new_meshfile_operations.cpp
             katana_backend/src/pipolly.cpp
             katana_backend/src/section.cpp
             katana_backend/src/stitching.cpp
+            katana_backend/src/geofile_operations.cpp
             )
 target_include_directories(katana_backend PUBLIC katana_backend/incl)
 
