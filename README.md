@@ -7,6 +7,16 @@ Katana is currently at version 0.9T. Commits will be published to the github pag
 Katana is an open-source process-modeling assistant & sectioning program. Katana allows a designer to peer into GDS files and generate two-dimensional Integrated Circuit (IC) cross-sections with the assistance of layer definition information. Additionally, Katana is capable of automatically generating a [FLOOXS](flooxs.ece.ufl.edu/) process-modeling input script. Katana can also combine multiple two-dimensional Gmsh .geo files and convert .msh files back into .geo files (mesh removal). The video below demonstrates typical use of the software. The video is of a pre-release version. See the Usage section for instructions on how to use the newest version.
 [![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
 
+# Changelog
+The following features were added in version 0.9:
+```
+    1 - Merge two Gmsh .geo files together
+    2 - Simplify .geo files
+    3 - Perform coherence optimization on .geo files
+    4 - Translate entire .geo file
+    5 - Rotate entire .geo file.
+    6 - Volume calculation of Gmsh .msh Physical Volumes
+```
 # Usage
 Katana can be executed with input arguments run interactively.
 If Katana is run with no input arguments, interactive mode is started.

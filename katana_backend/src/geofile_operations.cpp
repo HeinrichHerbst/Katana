@@ -7,6 +7,7 @@
  */
 #include <chrono>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <map>
 #include <set>
@@ -1903,8 +1904,8 @@ void GEO::geofile::rotate_point(const double &o_x,       const double &o_y,
 
 void GEO::geofile::rotate_X(const double &theta, point &in_point)
 {
-    double sin_theta = sin(theta);
-    double cos_theta = cos(theta);
+    double sin_theta = std::sin(theta);
+    double cos_theta = std::cos(theta);
     double y = in_point.y * cos_theta - in_point.z * sin_theta;
     double z = in_point.z * cos_theta + in_point.y * sin_theta;
     in_point.y = y;
@@ -1913,8 +1914,8 @@ void GEO::geofile::rotate_X(const double &theta, point &in_point)
 
 void GEO::geofile::rotate_Y(const double &theta, point &in_point)
 {
-    double sin_theta = sin(theta);
-    double cos_theta = cos(theta);
+    double sin_theta = std::sin(theta);
+    double cos_theta = std::cos(theta);
     double x = in_point.x * cos_theta + in_point.z * sin_theta;
     double z = in_point.z * cos_theta - in_point.x * sin_theta;
     in_point.x = x;
@@ -1923,8 +1924,8 @@ void GEO::geofile::rotate_Y(const double &theta, point &in_point)
 
 void GEO::geofile::rotate_Z(const double &theta, point &in_point)
 {
-    double sin_theta = sin(theta);
-    double cos_theta = cos(theta);
+    double sin_theta = std::sin(theta);
+    double cos_theta = std::cos(theta);
     double x = in_point.x * cos_theta - in_point.y * sin_theta;
     double y = in_point.y * cos_theta + in_point.x * sin_theta;
     in_point.x = x;
