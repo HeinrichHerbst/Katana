@@ -225,7 +225,10 @@ void UI::print_help()
     skip_ln();
     print_ln("                  Two files are produced; a geometry file and .tcl file.");
     print_ln("                  The TCL file should be run by FLOOXS to generate a");
-    print_ln("                  cross-section.");
+    print_ln("                  cross-section. Both files are saved in the same");
+    print_ln("                  directory as the Katana executable.");
+    print_ln("                  The geometry file is named cross_section_output.geo");
+    print_ln("                  The FLOOXS input script is called katana_generated.tcl");
     skip_ln();
     print_ln(" \"-modeling\"      Geometrical manipulations module. Extra arguments allow");
     print_ln("                  for direct file processing.");
@@ -811,8 +814,8 @@ bool UI::isinteger(std::string const& n) noexcept
 
 void UI::execute_slice(std::string gds_path, std::string ldf_path, int x1, int y1, int x2, int y2)
 {
-    std::string geo_outpath = "data/cross_section_output.geo";
-    std::string tcl_outpath = "data/katana_generated.tcl";
+    std::string geo_outpath = "cross_section_output.geo";
+    std::string tcl_outpath = "katana_generated.tcl";
     int grid_spacing = 50;
     gdscpp gds_file;
     ldf ldf_data;

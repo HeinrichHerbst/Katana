@@ -45,7 +45,10 @@ Katana is capable of generating cross sections of circuits from mask and process
 
         Two files are produced; a geometry file and .tcl file.
         The TCL file should be run by FLOOXS to generate a
-        cross-section.
+        cross-section. Both files are saved in the same directory
+        as the Katana executable. The geometry file is named
+        "cross_section_output.geo". The FLOOXS input script is
+        called "katana_generated.tcl".
 ```
 
 Katana assists in combining multiple cross-sections in order to create a three-dimensional model.
