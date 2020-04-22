@@ -8,6 +8,10 @@ Katana is an open-source process-modeling assistant & sectioning program. Katana
 [![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
 
 # Changelog
+Post 0.9 Bugfixes:
+```
+Katana now successfully handles cross-sections submerged in a polygon.
+```
 The following features were added in version 0.9:
 ```
     1 - Merge two Gmsh .geo files together

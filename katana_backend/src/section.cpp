@@ -131,8 +131,9 @@ int section_data::populate_polygons(gdscpp &gds_file)
        str_it++) {
     if (str_it->heirarchical_level == 0) {
       // check for intercept here
-      if (check_for_intercept(str_it->bounding_box, axis_type, x1, y1, x2,
-                              y2) == true) {
+      if (check_for_intercept(str_it->bounding_box, axis_type,
+                              x1, y1, x2, y2) == true)
+      {
         std::map<unsigned int, std::vector<co_ord>> polygon_data;
         recursive_unpack(str_it->name, structure_vector, structure_lookup,
                          polygon_data);
@@ -642,6 +643,37 @@ int section_data::calculate_intercepts()
       analyze_polygon(current_polygon->first, *vect_iter);
       vect_iter++;
     }
+    // No intercepts were detected, check if point lies within any polygon.
+    // If it does, create two intercepts, one at each point
+    // This is necessary to show layers even when you are working inside.
+    if(!layer_intercepts.count(current_polygon->first))
+      {
+          bool is_inside = false;
+          Point p;
+          p.x = x1;
+          p.y = y1;
+          auto v_end = vect.end();
+          for(auto v_it = vect.begin(); v_it!= v_end; v_it++)
+          {
+            vector<Point> v_it_as_Point;
+            co_ord_to_point_v(*v_it, v_it_as_Point);
+            if(Is_Inside(p, v_it_as_Point)==true)
+              is_inside=true;
+          }
+          if (is_inside==true)
+          {
+            cout << "Cross-section detected inside polygon. "<<endl;
+            cout << "Inserting boundary on layer "
+            << current_polygon->first <<"."  << endl;
+            vector<intercept_data> false_vect;
+            intercept_data false_intercept;
+            false_intercept.x=x1;
+            false_intercept.y=y1;
+            false_intercept.dist=0;
+            false_vect.push_back(false_intercept);
+            layer_intercepts.insert({current_polygon->first,false_vect});
+          }
+      }
     current_polygon++;
   }
   return EXIT_SUCCESS;
@@ -1136,9 +1168,7 @@ int section_data::generate_blocks()
       my_segment.end_distance = end_dist;
       my_segment.primary = false;
       vector<co_ord>::iterator current_polygon = polygons[key].begin();
-      while (
-          current_polygon !=
-          polygons[key].end()) // Check midpoint against every polygon on layer
+      while ( current_polygon != polygons[key].end()) // Check midpoint against every polygon on layer
       {
         // while not end of current_polygon->x push current polygon to converted
         // polygon
@@ -1218,6 +1248,22 @@ int section_data::pull_used_layers(vector<int> &destination_vector)
 {
   for (auto it = polygons.begin(); it != polygons.end(); ++it) {
     destination_vector.push_back(it->first);
+  }
+  return EXIT_SUCCESS;
+}
+
+int co_ord_to_point_v(const co_ord &co,
+                        std::vector<Point> &p_v)
+{
+  auto itx = co.x.begin();
+  auto ity = co.y.begin();
+  while (itx != co.x.end()) {
+    Point current_point;
+    current_point.x = *itx;
+    current_point.y = *ity;
+    p_v.push_back(current_point);
+    itx++;
+    ity++;
   }
   return EXIT_SUCCESS;
 }

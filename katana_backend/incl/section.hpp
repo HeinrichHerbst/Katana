@@ -8,6 +8,7 @@
 #ifndef gdssection
 #define gdssection
 #include "gdsCpp.hpp"
+#include "pipolly.hpp"
 #include <cassert>
 
 // Holds co-ordinates of a polygon.
@@ -120,6 +121,8 @@ bool check_for_intercept(int *bounding_box, int &axis_type, int &x1, int &y1,
 int calibrate_line(int x1, int y1, int x2, int y2);
 int set_section_type(int &line_type, int &section_type);
 int path_to_polygon(gdsPATH path_data, co_ord &dest_co_ord);
+int co_ord_to_point_v(const co_ord  &c_v,
+                      std::vector<Point> &p_v);
 
 void recursive_unpack(
     const std::string &structure_name, std::vector<gdsSTR> &struct_vect,
