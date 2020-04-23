@@ -26,12 +26,14 @@ namespace GEO{
     int compare_line(const line &first, const line &second);
     bool check_same_vec(const std::vector<int> &first, const std::vector<int> &second);
     int compare_vector(const std::vector<int> &first, const std::vector<int> &second);
+    void remove_empty_strings(std::vector<std::string>& input_string);
     enum geo_argument
     {
         eBlank_Space,
         eCurve_Loop,
         eDefault,
         eLine,
+        eMesh_Spacing,
         ePhysical_Curve,
         ePhysical_Point,
         ePhysical_Surface,
@@ -61,8 +63,10 @@ namespace GEO{
         int rotate_data(const double &o_x,       const double &o_y,
                           const double &o_z,       const double &theta_x,
                           const double &theta_y,   const double &theta_z);
+        int scale_data(const double factor);
         void make_coherent();
     private:
+        double mesh_spacing;
         // Elementary entities
         std::map<int, point>            points_map;
         std::map<int, line>             lines_map;
@@ -123,6 +127,9 @@ namespace GEO{
         int import_volume(  std::vector<std::string> &split_string_vector,
                                 std::string &import_path,
                                 int &line_number);
+
+        int import_mesh_spacing(std::vector<std::string> &split_string_vector);
+
         int simplify_volumes();
         int adjust_volumes(std::map<int,int> changes);
         int merge_volumes(geofile &secondary_file);
@@ -143,6 +150,7 @@ namespace GEO{
         void rotate_X(const double &theta, point &in_point);
         void rotate_Y(const double &theta, point &in_point);
         void rotate_Z(const double &theta, point &in_point);
+        void scale_point(point &in_point, const double factor);
     };
 }
 #endif

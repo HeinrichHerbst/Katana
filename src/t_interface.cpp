@@ -78,11 +78,11 @@ void UI::interactive_mode()
 void UI::main_menu()
 {
     print_ln(" Please enter a number followed by return:");
-    skip_ln();
-    print_ln(" 1 - Generate FLOOXS input script.");
-    print_ln(" 2 - Manipulate model geometry.");
-    print_ln(" 3 - Mesh file operations.");
-    print_ln(" 4 - Help with Katana.");
+        skip_ln();
+        print_ln(" 1 - Generate FLOOXS input script.");
+        print_ln(" 2 - Manipulate model geometry.");
+        print_ln(" 3 - Mesh file operations.");
+        print_ln(" 4 - Help with Katana.");
     int choice = get_choice();
     bool accepted = false;
     while (accepted == false)
@@ -125,14 +125,16 @@ enum quilt_code
     eMerge_simple,
     eSimple_append,
     eTranslate,
-    eRotate
+    eRotate,
+    eScale
 };
 quilt_code hash_quilt (std::string const& inString)
 {
-    if (inString == "-m")   return eMerge_simple;
-    if (inString == "-r")   return eRotate;
-    if (inString == "-sa")  return eSimple_append;
-    if (inString == "-t")   return eTranslate;
+    if (inString == "-m")     return eMerge_simple;
+    if (inString == "-r")     return eRotate;
+    if (inString == "-sa")    return eSimple_append;
+    if (inString == "-t")     return eTranslate;
+    if (inString == "-scale") return eScale;
     return eProblem;
 }
 void UI::gather_modeling_arg(int &argc, char *argv[])
@@ -153,8 +155,13 @@ void UI::gather_modeling_arg(int &argc, char *argv[])
                 break;
             case eTranslate:
                 execute_translate(argc, argv);
+            case eScale:
+                execute_scale(argc, argv);
                 break;
             default:
+                std::string problem_arg = argv[2];
+                print_ln("Error: Unrecognized command: <"+problem_arg+">.");
+                print_ln("Expected -m, -r, -t, -scale etc.");
                 break;
         }
     }
@@ -191,9 +198,16 @@ void UI::print_version()
 int UI::get_choice()
 {
     char mychar;
-    scanf(" %c", &mychar);
-    int choice = mychar - '0';
-    return choice;
+    int returned;
+    returned = scanf(" %c", &mychar);
+    if(returned==-1)
+        return 99;
+    else
+    {
+        int choice = mychar - '0';
+        std::cout<<"Using input: ["<<choice<<"]."<<std::endl;
+        return choice;
+    }
 }
 
 void UI::print_help()
@@ -280,6 +294,18 @@ void UI::print_help()
     print_ln("                  e.g. ./Katana -modeling -r data/shape.geo");
     print_ln("                  0 0 0 30 30 30");
     skip_ln();
+    print_ln(" ^ -scale         Scale entire .geo file. Also perform coherence");
+    print_ln("                  optimization and file simplification. Requires");
+    print_ln("                  scaling factor. Useful for when database units");
+    print_ln("                  are different to expected.");
+    skip_ln();
+    print_ln("                  Format <Katana> <modeling> <scale command>");
+    print_ln("                  <target file> <output file location>");
+    print_ln("                  <scaling factor>");
+    skip_ln();
+    print_ln("                  e.g. ./Katana -modeling -scale data/shape.geo");
+    print_ln("                  data/smaller_shape.geo 1e-2");
+    skip_ln();
     print_ln(" \"-meshops\"       Meshfile manipulations module.");
     skip_ln();
     print_ln(" ^ -s {Legacy}    Convert FLOOXS exported 2D msh. to .geo contour.");
@@ -342,15 +368,17 @@ void UI::gather_slice_arg(int &argc, char *argv[])
 
 void UI::gather_modeling_interactive()
 {
-    print_ln("What would you like to do?");
-    print_ln("Please enter a number followed by return:");
-    print_ln(" 1 - Append one 2D geofile to another.");
-    print_ln(" 2 - Merge two geo files.");
-    print_ln(" 3 - Translate entire geo file.");
-    print_ln(" 4 - Rotate entire geo file.");
     bool answered = false;
     while (answered == false)
     {
+        print_ln("What would you like to do?");
+        print_ln(" 1 - Append one 2D geofile to another.");
+        print_ln(" 2 - Merge two geo files.");
+        print_ln(" 3 - Translate entire geo file.");
+        print_ln(" 4 - Rotate entire geo file.");
+        print_ln(" 5 - Scale entire geo file.");
+        skip_ln();
+        print_ln("Please enter a number followed by return:");
         int choice = get_choice();
         switch (choice)
         {
@@ -370,6 +398,10 @@ void UI::gather_modeling_interactive()
             gather_rotate_interactive();
             answered = true;
             break;
+        case 5:
+            gather_scale_interactive();
+            answered = true;
+            break;
         default:
             clear_screen();
             print_ln("Unrecognized input");
@@ -380,13 +412,13 @@ void UI::gather_modeling_interactive()
 
 void UI::gather_mesh_interactive()
 {
-    print_ln("What would you like to do?");
-    print_ln("Please enter a number followed by return:");
-    print_ln(" 1 - Convert FLOOXS 2D mesh output into .geo contour.");
-    print_ln(" 2 - Compute volumes of .msh \"Physical Volumes\".");
     bool answered = false;
     while (answered==false)
     {
+        print_ln("What would you like to do?");
+        print_ln("Please enter a number followed by return:");
+        print_ln(" 1 - Convert FLOOXS 2D mesh output into .geo contour.");
+        print_ln(" 2 - Compute volumes of .msh \"Physical Volumes\".");
         int choice = get_choice();
         switch (choice)
         {
@@ -475,6 +507,45 @@ void UI::gather_rotate_interactive()
     }
     else
         print_ln("Error: Invalid rotation input.");
+}
+
+void UI::gather_scale_interactive()
+{
+    std::string geo_in, geo_out, scale;
+    print_ln("Please enter path to geometry file:");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+    getline(std::cin, geo_in);
+    std::cout<<"Using \"" << geo_in << "\" as input path."<< std::endl;
+    skip_ln();
+    print_ln("Please enter output path name:");
+    print_ln("(e.g. data/output.geo)");
+    getline(std::cin, geo_out);
+    std::cout<<"Using \"" << geo_out << "\" as output file path."<< std::endl;
+    print_ln("Please enter scaling factor:");
+    getline(std::cin, scale);
+    std::cout<<"Using \"" << scale << "\" as scaling factor."<< std::endl;
+    GEO::geofile input_geo;
+    if (input_geo.import_geofile(geo_in)==EXIT_SUCCESS)
+    {
+        if(GEO::is_e_notation(scale))
+        {
+            double factor = std::stod(scale);
+            if(input_geo.scale_data(factor)==EXIT_SUCCESS)
+            {
+                if(input_geo.export_geofile(geo_out)==EXIT_SUCCESS)
+                    print_ln("Export Success.");
+                else
+                    print_ln("Export_failure");
+            }
+            else
+                print_ln("Error: Scaling Failed.");
+        }
+        else
+            print_ln("Error: Incorrect scaling factor format.");
+    }
+    else
+        print_ln("Error: Import failed.");
+
 }
 
 void UI::gather_silver_linings_interactive()
@@ -923,6 +994,41 @@ void UI::execute_rotate(int &argc, char *argv[])
         }
         else
             print_ln("Error: Shifting parameters unrecognized. Terminating.");
+    }
+}
+
+void UI::execute_scale(int &argc, char *argv[])
+{
+    if (argc!=6)
+    {
+        print_ln("Error: incorrect argument count.");
+    }
+    else
+    {
+        std::string geo_file_name   = argv[3];
+        std::string outfile_name    = argv[4];
+        std::string factor          = argv[5];
+        if (GEO::is_e_notation(factor))
+        {
+            GEO::geofile primary_geofile;
+            if (primary_geofile.import_geofile(geo_file_name)==EXIT_SUCCESS)
+            {
+                double fac=std::stod(factor);
+                if(primary_geofile.scale_data(fac)==EXIT_SUCCESS)
+                {
+                    if (primary_geofile.export_geofile(outfile_name)==EXIT_SUCCESS)
+                        print_ln("Export Succeeded.");
+                    else
+                        print_ln("Error: Export failed.");
+                }
+                else
+                    print_ln("Error: Scaling failed.");
+            }
+            else
+                print_ln("Error: Import of Geofile failed.");
+        }
+        else
+            print_ln("Error: Scaling factor not valid.");
     }
 }
 

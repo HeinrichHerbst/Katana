@@ -49,5 +49,7 @@ namespace UI
                                                 std::string output_geo,
                                                 std::string char_len);
     void gather_volume_calc_interactive();
+    void gather_scale_interactive();
+    void execute_scale(int &argc, char *argv[]);
 }
 #endif

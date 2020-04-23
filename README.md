@@ -8,13 +8,17 @@ Katana is an open-source process-modeling assistant & sectioning program. Katana
 [![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
 
 # Changelog
-0.9.1 Bugfixes:
+0.9.2 Release:
+```
+ # Added scale functionality to geometry operations.
+ # Added support for Mesh spacing argument in geometry files.
+```
+0.9.1 Release:
 ```
  # Katana now successfully handles cross-sections submerged in a polygon.
-
  # Masks will no longer erroneously be generated over entire layer.
 ```
-The following features were added in version 0.9:
+0.9 Release:
 ```
     1 - Merge two Gmsh .geo files together
     2 - Simplify .geo files
@@ -57,8 +61,15 @@ Katana is capable of generating cross sections of circuits from mask and process
         called "katana_generated.tcl".
 ```
 
-Katana assists in combining multiple cross-sections in order to create a three-dimensional model.
-
+Katana assists in combining multiple cross-sections in order to create a three-dimensional model. All modeling commands make use of the Gmsh .geo file format. In order to define the characteristic length of all points in the .geo file, add the following line to the top of your .geo file:
+```
+MeshSpac = 1;
+```
+Any double can be used in space of the 1. Then refer to all points with that mesh spacing.
+```
+Point(1) = {1, 1, 1, MeshSpac};
+```
+The modeling module has the following functionality:
 ```
     -modeling -m
         Merges two specified geometry files in the following manner:
@@ -109,6 +120,17 @@ Katana assists in combining multiple cross-sections in order to create a three-d
         <theta x> <theta y> <theta z>
 
         e.g. ./katana -modeling -r data/shape.geo 0 0 0 30 30 30
+
+    -modeling -scale
+        Scale entire .geo file. Also perform coherence optimization
+        and file simplification. Requires a scaling factor. Useful
+        for when database units are different to expected.
+
+        Format <Katana> <modeling> <scale command>
+        <target file> <output file> <factor>
+
+        e.g. ./katana -modeling -scale data/bigshape.geo
+             data/smallshape.geo 1e-2
 ```
 
 Katana has a Gmsh mesh module capable of mesh volume calculation, as well as conversion of FLOOXS meshes back into a geometry format representation (.geo).

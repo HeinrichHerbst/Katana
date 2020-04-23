@@ -15,8 +15,10 @@
 #include <boost/algorithm/string.hpp>
 #include "geofile_operations.hpp"
 
+//Initialization of object.
 GEO::geofile::geofile(/* args */)
 {
+    mesh_spacing = 0;
 }
 GEO::geofile::~geofile()
 {
@@ -110,6 +112,7 @@ GEO::geo_argument GEO::hashit(std::string const& inString)
     if (inString == "Physical Curve")   return GEO::ePhysical_Curve;
     if (inString == "Physical Surface") return GEO::ePhysical_Surface;
     if (inString == "Physical Volume")  return GEO::ePhysical_Volume;
+    if (inString == "MeshSpac")         return GEO::eMesh_Spacing;
     if (inString == "")                 return GEO::eBlank_Space;
     return GEO::eDefault;
 }
@@ -123,7 +126,7 @@ int GEO::geofile::import_geofile(std::string import_path)
         while (getline(geo_file, file_buffer))
         {
             std::vector<std::string> split_string_vector;
-            boost::split(split_string_vector, file_buffer, boost::is_any_of("(),{}"));
+            boost::split(split_string_vector, file_buffer, boost::is_any_of("(),{}="));
             trim_string_vector(split_string_vector);
             geo_argument command = hashit(split_string_vector[0]);
             switch (command)
@@ -142,6 +145,10 @@ int GEO::geofile::import_geofile(std::string import_path)
                 break;
             case ePlane_surface:
                 if(import_plane_surface(split_string_vector, import_path, line_number)==EXIT_FAILURE)
+                    return EXIT_FAILURE;
+                break;
+            case eMesh_Spacing:
+                if(import_mesh_spacing(split_string_vector)==EXIT_FAILURE)
                     return EXIT_FAILURE;
                 break;
             case eSurface_loop:
@@ -203,16 +210,23 @@ int GEO::geofile::import_point( std::vector<std::string> &split_string_vector,
                                 int &line_number)
 {
     if ((is_integer(split_string_vector[1])==true)&&
+        (is_e_notation(split_string_vector[2])==true)&&
         (is_e_notation(split_string_vector[3])==true)&&
         (is_e_notation(split_string_vector[4])==true)&&
-        (is_e_notation(split_string_vector[5])==true)&&
-        (is_e_notation(split_string_vector[6])==true))
+        ((is_e_notation(split_string_vector[5])==true)||(split_string_vector[5]=="MeshSpac") ))
     {
         point input_point;
-        input_point.x = std::stod(split_string_vector[3]);
-        input_point.y = std::stod(split_string_vector[4]);
-        input_point.z = std::stod(split_string_vector[5]);
-        input_point.char_len = std::stod(split_string_vector[6]);
+        input_point.x = std::stod(split_string_vector[2]);
+        input_point.y = std::stod(split_string_vector[3]);
+        input_point.z = std::stod(split_string_vector[4]);
+        if(split_string_vector[5]=="MeshSpac")
+        {
+            input_point.char_len = mesh_spacing;
+        }
+        else
+        {
+            input_point.char_len = std::stod(split_string_vector[5]);
+        }
         points_map.insert({std::stoi(split_string_vector[1]), input_point});
         return EXIT_SUCCESS;
     }
@@ -230,12 +244,12 @@ int GEO::geofile::import_line( std::vector<std::string> &split_string_vector,
                                 int &line_number)
 {
     if ((is_integer(split_string_vector[1])==true)&&
-        (is_integer(split_string_vector[3])==true)&&
-        (is_integer(split_string_vector[4])==true))
+        (is_integer(split_string_vector[2])==true)&&
+        (is_integer(split_string_vector[3])==true))
     {
         line input_line;
-        input_line.start = std::stod(split_string_vector[3]);
-        input_line.end = std::stod(split_string_vector[4]);
+        input_line.start = std::stod(split_string_vector[2]);
+        input_line.end = std::stod(split_string_vector[3]);
         lines_map.insert({std::stoi(split_string_vector[1]), input_line});
         return EXIT_SUCCESS;
     }
@@ -254,15 +268,12 @@ int GEO::geofile::import_curve_loop( std::vector<std::string> &split_string_vect
                                 int &line_number)
 {
     auto it = split_string_vector.begin();
-    split_string_vector.erase(it);
     it++;
-    split_string_vector.erase(it);
-    it = split_string_vector.end();
-    it--;
-    split_string_vector.erase(it);
-    it = split_string_vector.begin();
+    int key = std::stod(*it);
+    it++;
     bool proceed = true;
-    while (it!=split_string_vector.end())
+    auto ssv_end = std::prev(split_string_vector.end(),1);//don't check semicolon.
+    while (it!=ssv_end)
     {
         if (!is_integer(*it)) proceed = false;
         it++;
@@ -274,11 +285,9 @@ int GEO::geofile::import_curve_loop( std::vector<std::string> &split_string_vect
         << import_path << ")" << std::endl;
         return EXIT_FAILURE;
     }
-    it = split_string_vector.begin();
-    int key = std::stod(*it);
-    it++;
+    it = std::next(split_string_vector.begin(),2);
     std::vector<int> curve_references;
-    while (it!=split_string_vector.end())
+    while (it!=ssv_end)
     {
         curve_references.push_back(std::stod(*it));
         it++;
@@ -293,14 +302,13 @@ int GEO::geofile::import_plane_surface( std::vector<std::string> &split_string_v
 {
     auto it = split_string_vector.begin();
     split_string_vector.erase(it);
-    it++;
+    it = std::prev(split_string_vector.end(),1);
     split_string_vector.erase(it);
     it = split_string_vector.end();
-    it--;
-    split_string_vector.erase(it);
     it = split_string_vector.begin();
     bool proceed = true;
-    while (it!=split_string_vector.end())
+    auto ssv_end = split_string_vector.end();
+    while (it!=ssv_end)
     {
         if (!is_integer(*it)) proceed = false;
         it++;
@@ -325,14 +333,12 @@ int GEO::geofile::import_surface_loop(  std::vector<std::string> &split_string_v
 {
     auto it = split_string_vector.begin();
     split_string_vector.erase(it);
-    it++;
-    split_string_vector.erase(it);
-    it = split_string_vector.end();
-    it--;
+    it = std::prev(split_string_vector.end(),1);
     split_string_vector.erase(it);
     it = split_string_vector.begin();
     bool proceed = true;
-    while (it!=split_string_vector.end())
+    auto ssv_end = split_string_vector.end();
+    while (it!=ssv_end)
     {
         if (!is_integer(*it)) proceed = false;
         it++;
@@ -348,7 +354,7 @@ int GEO::geofile::import_surface_loop(  std::vector<std::string> &split_string_v
     int key = std::stod(*it);
     it++;
     std::vector<int> surface_references;
-    while (it!=split_string_vector.end())
+    while (it!=ssv_end)
     {
         surface_references.push_back(std::stod(*it));
         it++;
@@ -363,10 +369,7 @@ int GEO::geofile::import_volume(    std::vector<std::string> &split_string_vecto
 {
     auto it = split_string_vector.begin();
     split_string_vector.erase(it);
-    it++;
-    split_string_vector.erase(it);
-    it = split_string_vector.end();
-    it--;
+    it= std::prev(split_string_vector.end(),1);
     split_string_vector.erase(it);
     it = split_string_vector.begin();
     bool proceed = true;
@@ -397,9 +400,7 @@ int GEO::geofile::import_physical_entity(   std::vector<std::string> &split_stri
     auto it = split_string_vector.begin();
     split_string_vector.erase(it);
     boost::erase_all( *it, "\"" );
-    it++;
-    split_string_vector.erase(it);
-    it = --split_string_vector.end();
+    it=std::prev(split_string_vector.end(),1);
     split_string_vector.erase(it);
     it = split_string_vector.begin();
     std::string group_name = *it++;
@@ -443,6 +444,19 @@ int GEO::geofile::import_physical_entity(   std::vector<std::string> &split_stri
     return EXIT_SUCCESS;
 }
 
+int GEO::geofile::import_mesh_spacing(std::vector<std::string> &split_string_vector)
+{
+    boost::erase_all(split_string_vector[1], ";");
+    if (is_e_notation(split_string_vector[1]))
+    {
+        std::string msh_spc = split_string_vector[1];
+        mesh_spacing = std::stod(msh_spc);
+        return EXIT_SUCCESS;
+    }
+    else
+        return EXIT_FAILURE;
+}
+
 bool GEO::is_integer(std::string const& n) noexcept
 {
     if (std::isdigit(n[0]) || (n.size() > 1 && (n[0] == '-' || n[0] == '+')))
@@ -460,20 +474,32 @@ bool GEO::is_e_notation(std::string const& n) noexcept
     if (std::isdigit(n[0]) || (n.size() > 1 && (n[0] == '-' || n[0] == '+')))
         {
             for (std::string::size_type i{ 1 }; i < n.size(); ++i)
-                if (!( ( std::isdigit(n[i]) ) || (n[i]=='e') || (n[i]=='.') ))
+                if (!( ( std::isdigit(n[i]) ) ||
+                       (n[i]=='e') ||
+                       (n[i]=='.') ||
+                       (n[i]=='+') ||
+                       (n[i]=='-')    ) )
                     return false;
             return true;
         }
         return false;
 }
 
+//Remove whitespace
 void GEO::trim_string_vector(std::vector<std::string> &invec)
 {
     auto it = invec.begin();
     while (it != invec.end())
-    {
         boost::trim(*it++);
-    }
+    remove_empty_strings(invec);
+}
+
+void GEO::remove_empty_strings(std::vector<std::string>& input_string)
+{
+  std::vector<std::string>::iterator it =
+  remove_if(input_string.begin(), input_string.end(),std::mem_fun_ref(&std::string::empty));
+  // erase the removed elements
+  input_string.erase(it, input_string.end());
 }
 
 int GEO::geofile::export_geofile(std::string export_path)
@@ -1853,6 +1879,25 @@ int GEO::geofile::rotate_data( const double &o_x,      const double &o_y,
         rotate_point(o_x,o_y,o_z,theta_x,theta_y,theta_z,i->second);
     }
     return EXIT_SUCCESS;
+}
+
+int GEO::geofile::scale_data(const double factor)
+{
+    make_coherent();
+    simplify_data();
+    auto pm_end = points_map.end();
+    for (auto i = points_map.begin(); i != pm_end; i++)
+    {
+        scale_point(i->second, factor);
+    }
+    return EXIT_SUCCESS;
+}
+
+void GEO::geofile::scale_point(point &in_point, const double factor)
+{
+    in_point.x = in_point.x * factor;
+    in_point.y = in_point.y * factor;
+    in_point.z = in_point.z * factor;
 }
 
 void GEO::geofile::translate_point(GEO::point &point,
