@@ -65,9 +65,8 @@ class section_data
 {
 private:
   // Holds all elements converted to polygons
-  std::map<unsigned int, std::vector<co_ord>> polygons; // key = layer number
-  std::map<int, std::vector<intercept_data>>
-      layer_intercepts; // key = layer number
+  std::map<unsigned int, std::vector<co_ord>> polygons;         // key = layer number
+  std::map<int, std::vector<intercept_data>>  layer_intercepts; // key = layer number
   std::map<int, std::map<int, building_blocks>>
       section_blocks; // key = layer number, second key = block_ID
   int x1, y1, x2, y2; // x-section co-ordinates

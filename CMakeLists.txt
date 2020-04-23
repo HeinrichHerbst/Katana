@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(Katana VERSION 0.1.0)
+project(katana VERSION 0.9.1)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

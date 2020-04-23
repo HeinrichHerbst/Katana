@@ -789,7 +789,8 @@ int section_data::push_intercept(int &layer, intercept_data intercept)
 // Add boundary values if they are not intercepts
 int section_data::unique_sort_intercepts()
 {
-  for (auto const &[key, val] : layer_intercepts) {
+  for (auto const &[key, val] : layer_intercepts)
+  {
     auto vec = val;
     // add beginning and end points [boundary zone]
     intercept_data boxing_boundary;
@@ -1140,18 +1141,18 @@ int section_data::slice_vert_vert(int line_start[2], int line_end[2],
 
 int section_data::generate_blocks()
 {
-  std::map<int, std::vector<intercept_data>>::iterator layer_iter =
-      layer_intercepts.begin();
+  std::map<int, std::vector<intercept_data>>::iterator
+  layer_iter = layer_intercepts.begin();
   auto end = layer_intercepts.end();
   int block_id = 0;
-  while (layer_iter !=
-         end) // =================== Layers Loop ======================]
+  while (layer_iter != end)
+  // =================== Layers Loop ======================]
   {
     unsigned int key = layer_iter->first;
     auto it = layer_iter->second.begin();
     auto it_end = --layer_iter->second.end();
-    while (it !=
-           it_end) // --------------- Sectioned Segments Loop ---------------<
+    while (it != it_end)
+    // --------------- Sectioned Segments Loop ---------------<
     {
       int startx = it->x;
       int starty = it->y;
@@ -1170,8 +1171,7 @@ int section_data::generate_blocks()
       vector<co_ord>::iterator current_polygon = polygons[key].begin();
       while ( current_polygon != polygons[key].end()) // Check midpoint against every polygon on layer
       {
-        // while not end of current_polygon->x push current polygon to converted
-        // polygon
+        // while not end of current_polygon->x push current polygon to converted polygon
         vector<Point> converted_polygon;
         auto itx = current_polygon->x.begin();
         auto ity = current_polygon->y.begin();
@@ -1190,8 +1190,7 @@ int section_data::generate_blocks()
       }
       // By this stage if the point is in a polygon, primary is true.
       // section_blocks[key].push_back(my_segment);
-      auto [it, ins] =
-          section_blocks[key].insert_or_assign(block_id, my_segment);
+      auto [it, ins] = section_blocks[key].insert_or_assign(block_id, my_segment);
       block_id++;
     } // ------------------ End Sectioned Segment Loop  ---------<
     layer_iter++;

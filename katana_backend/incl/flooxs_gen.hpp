@@ -22,6 +22,7 @@ void generate_masks(std::vector<std::string> &masks,
                     std::map<int, layer_data> my_layer_info,
                     std::map<int, std::map<int, building_blocks>> my_blocks,
                     std::vector<int> layer_order, const double &db_unit_in_m,
-                    std::vector<int> &masked_layers);
+                    std::vector<int> &masked_layers,
+                    const int &xsec_dist);
 
 #endif

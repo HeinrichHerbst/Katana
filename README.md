@@ -1,5 +1,5 @@
-# Documentation Under Construction
-Last updated on 18 April, 2020.
+# Katana EDA Process Modeling Assistant
+Last updated on 23 April, 2020.
 Katana is currently at version 0.9T. Commits will be published to the github page:
 [Katana Github](https://github.com/HeinrichHerbst/Katana)
 
@@ -8,9 +8,11 @@ Katana is an open-source process-modeling assistant & sectioning program. Katana
 [![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
 
 # Changelog
-Post 0.9 Bugfixes:
+0.9.1 Bugfixes:
 ```
-Katana now successfully handles cross-sections submerged in a polygon.
+ # Katana now successfully handles cross-sections submerged in a polygon.
+
+ # Masks will no longer erroneously be generated over entire layer.
 ```
 The following features were added in version 0.9:
 ```

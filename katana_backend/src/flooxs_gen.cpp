@@ -31,8 +31,9 @@ int draw_flooxs_file(section_data section_info, ldf ldf_info,
 
   vector<string> masks;
   vector<int> masked_layers;
-  generate_masks(masks, my_layer_info, my_blocks, layer_order, db_unit_in_m,
-                 masked_layers);
+  int xsec_dist = section_info.get_sec_dist();
+  generate_masks(masks, my_layer_info, my_blocks,
+                 layer_order, db_unit_in_m, masked_layers, xsec_dist);
   masked_layers.erase(unique(masked_layers.begin(), masked_layers.end()),
                       masked_layers.end());
   draw_introduction(tcl_file);
@@ -107,28 +108,38 @@ void generate_masks(std::vector<std::string> &masks,
                     std::map<int, layer_data> my_layer_info,
                     std::map<int, std::map<int, building_blocks>> my_blocks,
                     std::vector<int> layer_order, const double &db_unit_in_m,
-                    std::vector<int> &masked_layers)
+                    std::vector<int> &masked_layers,
+                    const int &xsec_dist)
 {
   for (auto layer_order_it = layer_order.begin();
-       layer_order_it != layer_order.end(); layer_order_it++) {
+       layer_order_it != layer_order.end(); layer_order_it++)
+    {
     int layer_number = *layer_order_it;
     int layer_mask_value = my_layer_info[layer_number].mask;
     int sublayer_mask_count = 0;
     for (auto block_it = my_blocks[layer_number].begin();
-         block_it != my_blocks[layer_number].end(); block_it++) {
-      bool primary = block_it->second.primary;
-      if (((layer_mask_value == 1) && (primary == true)) ||
-          ((layer_mask_value == -1) && (primary == false))) {
-        ostringstream current_mask;
-        current_mask << "mask name=layer_";
-        current_mask << layer_number;
-        current_mask << "\tleft=";
-        current_mask << block_it->second.start_distance * db_unit_in_m;
-        current_mask << "\tright=";
-        current_mask << block_it->second.end_distance * db_unit_in_m;
-        current_mask << "\n";
-        masks.push_back(current_mask.str());
-        masked_layers.push_back(layer_number);
+         block_it != my_blocks[layer_number].end(); block_it++)
+    {
+      // If mask doesn't cover the entire layer
+      if(!( (block_it->second.start_distance==0)&&
+            (block_it->second.end_distance==xsec_dist) ) )
+      {
+        // generate a mask
+        bool primary = block_it->second.primary;
+        if (((layer_mask_value == 1) && (primary == true)) ||
+            ((layer_mask_value == -1) && (primary == false)))
+        {
+          ostringstream current_mask;
+          current_mask << "mask name=layer_";
+          current_mask << layer_number;
+          current_mask << "\tleft=";
+          current_mask << block_it->second.start_distance * db_unit_in_m;
+          current_mask << "\tright=";
+          current_mask << block_it->second.end_distance * db_unit_in_m;
+          current_mask << "\n";
+          masks.push_back(current_mask.str());
+          masked_layers.push_back(layer_number);
+        }
       }
     }
   }
