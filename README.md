@@ -47,7 +47,7 @@ Katana is capable of generating cross sections of circuits from mask and process
 
         Format: <Katana> <slice> <gds path> <ldf path> <x1> <y1> <x2> <y2>
 
-        e.g:    ./Katana -slice jj.gds mitllsfq5ee.ldf 500 0 500 1000
+        e.g:    ./katana -slice jj.gds mitllsfq5ee.ldf 500 0 500 1000
 
         Two files are produced; a geometry file and .tcl file.
         The TCL file should be run by FLOOXS to generate a
@@ -75,7 +75,7 @@ Katana assists in combining multiple cross-sections in order to create a three-d
         Format <Katana> <modeling> <merge command>
                <first file> <second file> <specified output>
 
-        e.g. ./Katana -modeling -m data/left.geo data/right.geo
+        e.g. ./katana -modeling -m data/left.geo data/right.geo
                       -data/combined.geo
 
     -modeling -sa
@@ -83,10 +83,10 @@ Katana assists in combining multiple cross-sections in order to create a three-d
         Simple append: Joins two 2D geo-files. Append the second
         to the first. Support for points and lines only.
 
-        Format: ./Katana <modeling> <simple append> <first .geo>
+        Format: <Katana> <modeling> <simple append> <first .geo>
         <second.geo> <output.geo> <char. len. override>(optional)
 
-        e.g.    ./Katana -modeling -sa left.geo right.geo both.geo
+        e.g.    ./katana -modeling -sa left.geo right.geo both.geo
         The optional arguments overrides the characteristic length
         of all points. See char. length in Gmsh documentation.
 
@@ -97,7 +97,7 @@ Katana assists in combining multiple cross-sections in order to create a three-d
         Format <Katana> <modeling> <translate command>
         <target file> <delta x> <delta y> <delta z>
 
-        e.g. ./Katana -modeling -t data/shape.geo 1000 0 1000
+        e.g. ./katana -modeling -t data/shape.geo 1000 0 1000
 
     -modeling -r
         Rotate entire .geo file. Also perform coherence optimization
@@ -108,7 +108,7 @@ Katana assists in combining multiple cross-sections in order to create a three-d
         <target file> <origin x> <origin y> <origin z>
         <theta x> <theta y> <theta z>
 
-        e.g. ./Katana -modeling -r data/shape.geo 0 0 0 30 30 30
+        e.g. ./katana -modeling -r data/shape.geo 0 0 0 30 30 30
 ```
 
 Katana has a Gmsh mesh module capable of mesh volume calculation, as well as conversion of FLOOXS meshes back into a geometry format representation (.geo).
@@ -122,14 +122,14 @@ Katana has a Gmsh mesh module capable of mesh volume calculation, as well as con
         Format <Katana> <mesh file operations> <Silver Lining Command>
         <target mesh> <geo output path>
 
-        e.g. ./Katana -meshops -s data/f_out.msh data/convert.geo
+        e.g. ./katana -meshops -s data/f_out.msh data/convert.geo
 
     -meshops -v
         Calculate all Gmsh .msh \"Physical Volume\" values in mesh file.
 
         Format <Katana> <mesh file operations> <Volume Command>
 
-        e.g. ./Katana -meshops -v data/example.msh"
+        e.g. ./katana -meshops -v data/example.msh"
 ```
 
 # Dependencies
