@@ -37,8 +37,8 @@ int draw_flooxs_file(section_data section_info, ldf ldf_info,
   masked_layers.erase(unique(masked_layers.begin(), masked_layers.end()),
                       masked_layers.end());
   draw_introduction(tcl_file);
-  tcl_file << "# Set FLOOXS meshing engine to Gmsh";
-  tcl_file << "pdbSet LevelSet gmsh 1";
+  tcl_file << "# Set FLOOXS meshing engine to Gmsh\n";
+  tcl_file << "pdbSet LevelSet gmsh 1\n";
   tcl_file << "# Configure grid spacing\n";
   tcl_file << "set spacing " << (double)spacing / 1000 << "\n";
   tcl_file << "set etchspace " << 5e-2 << "\n";
