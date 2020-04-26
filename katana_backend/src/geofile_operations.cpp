@@ -211,17 +211,20 @@ int GEO::geofile::import_point( std::vector<std::string> &split_string_vector,
                                 std::string &import_path,
                                 int &line_number)
 {
-    if ((is_integer(split_string_vector[1])==true)&&
-        (is_e_notation(split_string_vector[2])==true)&&
-        (is_e_notation(split_string_vector[3])==true)&&
-        (is_e_notation(split_string_vector[4])==true)&&
-        ((is_e_notation(split_string_vector[5])==true)||(split_string_vector[5]=="MeshSpac") ))
+    if ( (is_integer(split_string_vector[1])==true)&&
+         (is_e_notation(split_string_vector[2])==true)&&
+         (is_e_notation(split_string_vector[3])==true)&&
+         (is_e_notation(split_string_vector[4])==true)&&
+         ( (is_e_notation(split_string_vector[5])==true)||
+           (split_string_vector[5]=="MeshSpac")||
+           (split_string_vector[5]=="cl__1") ) )
     {
         point input_point;
         input_point.x = std::stod(split_string_vector[2]);
         input_point.y = std::stod(split_string_vector[3]);
         input_point.z = std::stod(split_string_vector[4]);
-        if(split_string_vector[5]=="MeshSpac")
+        if( (split_string_vector[5]=="MeshSpac")||
+            (split_string_vector[5]=="cl__1") )
         {
             input_point.char_len = mesh_spacing;
         }
