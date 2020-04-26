@@ -1,6 +1,6 @@
 # Katana EDA Process Modeling Assistant
-Last updated on 23 April, 2020.
-Katana is currently at version 0.9T. Commits will be published to the github page:
+Last updated on 26 April, 2020.
+Katana is currently at version 0.93T. Commits will be published to the github page:
 [Katana Github](https://github.com/HeinrichHerbst/Katana)
 
 # Overview
@@ -8,6 +8,14 @@ Katana is an open-source process-modeling assistant & sectioning program. Katana
 [![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
 
 # Changelog
+0.9.3 Release:
+```
+ # FLOOXS generated scripts now call the Gmsh meshing system instead of Triangle.
+ # Katana now properly handles unrolled .geo files
+   (.geo Importer understands characteristic length command "cl__1".)
+ # Volume calculation now works correctly with meshes generated from Windows Gmsh.
+
+```
 0.9.2 Release:
 ```
  # Added scale functionality to geometry operations.
