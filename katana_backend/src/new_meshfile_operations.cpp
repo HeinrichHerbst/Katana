@@ -50,6 +50,7 @@ int MSH::mesh_file::import_meshfile(const std::string &import_path)
     {
         while (getline(mesh_file, line_buffer))
         {
+            boost::erase_all(line_buffer, "\r");
             line_type hash_line = hash_line_type(line_buffer);
             switch (hash_line)
             {
@@ -76,6 +77,7 @@ int MSH::mesh_file::import_meshfile(const std::string &import_path)
 int MSH::mesh_file::scan_MeshFormat(std::fstream &mesh_file, std::string &line_buffer)
 {
     getline(mesh_file, line_buffer);
+    boost::erase_all(line_buffer, "\r");
     if (check_read_state(mesh_file)) return EXIT_FAILURE;
     if (line_buffer.compare("2.2 0 8"))
     {
@@ -83,6 +85,7 @@ int MSH::mesh_file::scan_MeshFormat(std::fstream &mesh_file, std::string &line_b
         return EXIT_FAILURE;
     }
     getline(mesh_file, line_buffer);
+    boost::erase_all(line_buffer, "\r");
     if (check_read_state(mesh_file)) return EXIT_FAILURE;
     if (line_buffer.compare("$EndMeshFormat"))
     {
@@ -94,24 +97,33 @@ int MSH::mesh_file::scan_MeshFormat(std::fstream &mesh_file, std::string &line_b
 
 int MSH::mesh_file::scan_PhysicalNames(std::fstream &mesh_file, std::string &line_buffer)
 {
-    while ( (getline(mesh_file, line_buffer))&&
-            (line_buffer.compare("$EndPhysicalNames")) )
+    while (line_buffer!="$EndPhysicalNames")
     {
-        if (check_read_state(mesh_file)) return EXIT_FAILURE;
+        getline(mesh_file,line_buffer);
+        boost::erase_all(line_buffer, "\r");
+        if (line_buffer=="$EndPhysicalNames")
+            break;
+        if ( check_read_state(mesh_file) )
+            return EXIT_FAILURE;
         std::vector<std::string> split_str_vec;
         boost::split(split_str_vec, line_buffer, boost::is_any_of("\""));
         if (split_str_vec.size()>2)
             physical_names_vect.push_back(split_str_vec[1]);
+
     }
     return EXIT_SUCCESS;
 }
 
 int MSH::mesh_file::scan_Nodes(std::fstream &mesh_file, std::string &line_buffer)
 {
-    while ( (getline(mesh_file, line_buffer))&&
-            (line_buffer.compare("$EndNodes")) )
+    while (line_buffer!="EndNodes")
     {
-        if (check_read_state(mesh_file)) return EXIT_FAILURE;
+        getline(mesh_file,line_buffer);
+        boost::erase_all(line_buffer, "\r");
+        if (line_buffer=="$EndNodes")
+            break;
+        if (check_read_state(mesh_file))
+            return EXIT_FAILURE;
         std::vector<std::string> split_str_vec;
         boost::split(split_str_vec, line_buffer, boost::is_any_of(" "));
         if (split_str_vec.size()==4)
@@ -128,10 +140,14 @@ int MSH::mesh_file::scan_Nodes(std::fstream &mesh_file, std::string &line_buffer
 
 int MSH::mesh_file::scan_Elements(std::fstream &mesh_file, std::string &line_buffer)
 {
-    while ( (getline(mesh_file, line_buffer))&&
-            (line_buffer.compare("$EndElements")) )
+    while (line_buffer!="$EndElements")
     {
-        if (check_read_state(mesh_file)) return EXIT_FAILURE;
+        getline(mesh_file,line_buffer);
+        boost::erase_all(line_buffer, "\r");
+        if (line_buffer=="$EndElements")
+            break;
+        if (check_read_state(mesh_file))
+            return EXIT_FAILURE;
         std::vector<std::string> split_str_vec;
         boost::split(split_str_vec, line_buffer, boost::is_any_of(" "));
         auto element_size = split_str_vec.size();
@@ -188,7 +204,7 @@ int MSH::mesh_file::print_volumes()
                 }
             }
         }
-        std::cout << "Volumes:" << std::endl;
+        std::cout << "Volumes in mesh file units:" << std::endl;
         int counter = 0;
         for (auto i = physical_names_vect.begin(); i != pnv_end; i++)
         {
