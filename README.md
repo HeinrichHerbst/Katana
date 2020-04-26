@@ -61,13 +61,15 @@ Katana is capable of generating cross sections of circuits from mask and process
         called "katana_generated.tcl".
 ```
 
-Katana assists in combining multiple cross-sections in order to create a three-dimensional model. All modeling commands make use of the Gmsh .geo file format. In order to define the characteristic length of all points in the .geo file, add the following line to the top of your .geo file:
+Katana assists in combining multiple cross-sections in order to create a three-dimensional model. All modeling commands make use of the Gmsh .geo file format. In order to define the characteristic length of all points in the .geo file, add either of the following lines to the top of your .geo file:
 ```
 MeshSpac = 1;
+cl__1 = 1;
 ```
-Any double can be used in space of the 1. Then refer to all points with that mesh spacing.
+Any double can be used in space of the 1. Refer to desired points with that mesh spacing command. Katana currently only stores one characteristic length variable.
 ```
 Point(1) = {1, 1, 1, MeshSpac};
+Point(1) = {1, 1, 1, cl__1};
 ```
 The modeling module has the following functionality:
 ```

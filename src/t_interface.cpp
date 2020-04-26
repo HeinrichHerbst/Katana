@@ -59,6 +59,7 @@ void UI::argument_mode(int &argc, char *argv[])
         gather_slice_arg(argc, argv);
         break;
     case ARG_MODE::eVersion:
+        print_version();
         break;
     default:
         print_ln("Unrecognized input argument. Try \"-help\" or interactive mode.");
@@ -786,6 +787,10 @@ void UI::gather_meshops_arg(int &argc, char *argv[])
         {
             std::string in_msh = argv[3];
             execute_volume_calculator(in_msh);
+        }
+        else
+        {
+            print_ln("Error: Unrecognized meshops argument.");
         }
     }
     else

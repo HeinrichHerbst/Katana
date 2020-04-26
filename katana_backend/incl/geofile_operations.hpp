@@ -31,6 +31,7 @@ namespace GEO{
     {
         eBlank_Space,
         eCurve_Loop,
+        eChar_Len,
         eDefault,
         eLine,
         eMesh_Spacing,

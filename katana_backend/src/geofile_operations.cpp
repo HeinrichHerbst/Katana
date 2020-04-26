@@ -100,7 +100,7 @@ int GEO::compare_vector(const std::vector<int> &first, const std::vector<int> &s
 GEO::geo_argument GEO::hashit(std::string const& inString)
 {
     if (inString == "Point")            return GEO::ePoint;
-    if (inString == "cl__1 = 1;")       return GEO::eUnroll;
+    if (inString == "cl__1")            return GEO::eChar_Len;
     if (inString == "Line")             return GEO::eLine;
     if (inString == "Line Loop")        return GEO::eCurve_Loop;
     if (inString == "Curve Loop")       return GEO::eCurve_Loop;
@@ -185,7 +185,9 @@ int GEO::geofile::import_geofile(std::string import_path)
                 break;
             case eBlank_Space:
                 break;
-            case eUnroll:
+            case eChar_Len:
+                if(import_mesh_spacing(split_string_vector)==EXIT_FAILURE)
+                    return EXIT_FAILURE;
                 break;
             default:
                 if (!file_buffer.rfind("//", 0) == 0) {
