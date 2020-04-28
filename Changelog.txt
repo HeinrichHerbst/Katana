@@ -1,0 +1,35 @@
+0.9.4 Release:
+```
+ # Katana now correctly treats .geo "Surface" as "Plane Surface".
+ # Katana's FLOOXS generation module now deposits and etches
+   according to the layer thicknesses specified in the LDF file.
+
+```
+
+0.9.3 Release:
+```
+ # FLOOXS generated scripts now call the Gmsh meshing system instead of Triangle.
+ # Katana now properly handles unrolled .geo files
+   (.geo Importer understands characteristic length command "cl__1".)
+ # Volume calculation now works correctly with meshes generated from Windows Gmsh.
+
+```
+0.9.2 Release:
+```
+ # Added scale functionality to geometry operations.
+ # Added support for Mesh spacing argument in geometry files.
+```
+0.9.1 Release:
+```
+ # Katana now successfully handles cross-sections submerged in a polygon.
+ # Masks will no longer erroneously be generated over entire layer.
+```
+0.9 Release:
+```
+    1 - Merge two Gmsh .geo files together
+    2 - Simplify .geo files
+    3 - Perform coherence optimization on .geo files
+    4 - Translate entire .geo file
+    5 - Rotate entire .geo file.
+    6 - Volume calculation of Gmsh .msh Physical Volumes
+```

@@ -68,32 +68,37 @@ int draw_flooxs_file(section_data section_info, ldf ldf_info,
   tcl_file << "# Plot initial view before deposition and etching.\n";
   tcl_file << "plot2d\tgrid\tgas\n\n";
   tcl_file << "# Alternate between depositing and etching\n";
+  double dep_time = 0;
+  double etch_time = 0;
   for (auto i = layer_order.begin(); i != layer_order.end(); i++) {
+    dep_time  = (double)my_layer_info[*i].thickness/100;
+    etch_time = roundf((((double)my_layer_info[*i].thickness/100)*1.05) * 100) / 100;//5% over-etch factor
     tcl_file << "";
+    tcl_file << "# Layer "<< my_layer_info[*i].name <<" ["<< *i <<"] \n";
     auto location = masked_layers.end();
     switch (my_layer_info[*i].film_type) {
     case 'I':
-      tcl_file << "deposit\toxide\ttime=2\tspacing=$depospace\n";
+      tcl_file << "deposit\toxide\ttime=" << dep_time << "\tspacing=$depospace\n";
       location = find(masked_layers.begin(), masked_layers.end(), *i);
       if (location != masked_layers.end())
         tcl_file << "etch\toxide\taniso\tmask=layer_" << *i
-                 << "\ttime=2.2\tspacing=$etchspace\n";
+                 << "\ttime=" << etch_time << "\tspacing=$etchspace\n";
       tcl_file << "plot2d\tgrid\tgas\n";
       break;
     case 'R':
-      tcl_file << "deposit\tsemi\ttime=0.9\tspacing=$depospace\n";
+      tcl_file << "deposit\tsemi\ttime=" << dep_time << "\tspacing=$depospace\n";
       location = find(masked_layers.begin(), masked_layers.end(), *i);
       if (location != masked_layers.end())
         tcl_file << "etch\tsemi\taniso\tmask=layer_" << *i
-                 << "\ttime=1.3\tspacing=$etchspace\n";
+                 << "\ttime=" << etch_time << "\tspacing=$etchspace\n";
       tcl_file << "plot2d\tgrid\tgas\n";
       break;
     case 'S':
-      tcl_file << "deposit\tmetal\ttime=2\tspacing=$depospace\n";
+      tcl_file << "deposit\tmetal\ttime=" << dep_time << "\tspacing=$depospace\n";
       location = find(masked_layers.begin(), masked_layers.end(), *i);
       if (location != masked_layers.end())
         tcl_file << "etch\tmetal\taniso\tmask=layer_" << *i
-                 << "\ttime=2.2\tspacing=$etchspace\n";
+                 << "\ttime=" << etch_time << "\tspacing=$etchspace\n";
       tcl_file << "plot2d\tgrid\tgas\n";
       break;
     default:
@@ -101,6 +106,7 @@ int draw_flooxs_file(section_data section_info, ldf ldf_info,
     }
   }
   tcl_file << "plot2d\tgrid\tgas\tgraph=win2\n";
+  tcl_file << "# Below line is FLOOXS input if executing in same directory.\n";
   tcl_file << "# source katana_generated.tcl\n";
   tcl_file.close();
   return EXIT_SUCCESS;

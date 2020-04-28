@@ -11,7 +11,7 @@
 #include <cctype>
 #include <vector>
 
-constexpr auto CURRENT_VERSION = 0.93;   // T for terminal
+constexpr auto CURRENT_VERSION = 0.94;   // T for terminal
 namespace UI
 {
     void print_ln(std::string line);

@@ -1,6 +1,6 @@
 # Katana EDA Process Modeling Assistant
-Last updated on 26 April, 2020.
-Katana is currently at version 0.93T. Commits will be published to the github page:
+Last updated on 28 April, 2020.
+Katana is currently at version 0.94T. Commits will be published to the github page:
 [Katana Github](https://github.com/HeinrichHerbst/Katana)
 
 # Overview
@@ -8,33 +8,7 @@ Katana is an open-source process-modeling assistant & sectioning program. Katana
 [![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
 
 # Changelog
-0.9.3 Release:
-```
- # FLOOXS generated scripts now call the Gmsh meshing system instead of Triangle.
- # Katana now properly handles unrolled .geo files
-   (.geo Importer understands characteristic length command "cl__1".)
- # Volume calculation now works correctly with meshes generated from Windows Gmsh.
-
-```
-0.9.2 Release:
-```
- # Added scale functionality to geometry operations.
- # Added support for Mesh spacing argument in geometry files.
-```
-0.9.1 Release:
-```
- # Katana now successfully handles cross-sections submerged in a polygon.
- # Masks will no longer erroneously be generated over entire layer.
-```
-0.9 Release:
-```
-    1 - Merge two Gmsh .geo files together
-    2 - Simplify .geo files
-    3 - Perform coherence optimization on .geo files
-    4 - Translate entire .geo file
-    5 - Rotate entire .geo file.
-    6 - Volume calculation of Gmsh .msh Physical Volumes
-```
+All updates and bugfixes can be found in "Changelog.txt".
 # Usage
 Katana can be executed with input arguments run interactively.
 If Katana is run with no input arguments, interactive mode is started.
