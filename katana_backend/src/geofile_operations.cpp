@@ -105,6 +105,7 @@ GEO::geo_argument GEO::hashit(std::string const& inString)
     if (inString == "Line Loop")        return GEO::eCurve_Loop;
     if (inString == "Curve Loop")       return GEO::eCurve_Loop;
     if (inString == "Plane Surface")    return GEO::ePlane_surface;
+    if (inString == "Surface")          return GEO::ePlane_surface;
     if (inString == "Surface Loop")     return GEO::eSurface_loop;
     if (inString == "Volume")           return GEO::eVolume;
     if (inString == "Physical Point")   return GEO::ePhysical_Point;

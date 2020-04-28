@@ -236,7 +236,7 @@ void UI::print_help()
     skip_ln();
     print_ln("                  Format:");
     print_ln("                  <Katana> <slice> <gds path> <ldf path> <x1> <y1> <x2> <y2>");
-    print_ln("                  ./Katana -slice jj.gds mitllsfq5ee.ldf 500 0 500 1000");
+    print_ln("                  ./katana -slice jj.gds mitllsfq5ee.ldf 500 0 500 1000");
     skip_ln();
     print_ln("                  Two files are produced; a geometry file and .tcl file.");
     print_ln("                  The TCL file should be run by FLOOXS to generate a");
@@ -263,7 +263,7 @@ void UI::print_help()
     print_ln("                  Format <Katana> <modeling> <merge command>");
     print_ln("                  <first file> <second file> <specified output>");
     skip_ln();
-    print_ln("                  e.g. ./Katana -modeling -m data/left.geo data/right.geo");
+    print_ln("                  e.g. ./katana -modeling -m data/left.geo data/right.geo");
     print_ln("                  -data/combined.geo");
     skip_ln();
     print_ln(" ^ -sa            Simple append: Joins two 2D geo-files. Append the second");
@@ -271,7 +271,7 @@ void UI::print_help()
     skip_ln();
     print_ln("                  Format: ./Katana <modeling> <simple append> <first .geo>");
     print_ln("                  <second.geo> <output.geo> <char. len. override>(optional)");
-    print_ln("                  e.g.    ./Katana -modeling -sa left.geo right.geo both.geo");
+    print_ln("                  e.g.    ./katana -modeling -sa left.geo right.geo both.geo");
     print_ln("                  The optional arguments overrides the characteristic length");
     print_ln("                  of all points. See char. length in Gmsh documentation.");
     skip_ln();
@@ -281,7 +281,7 @@ void UI::print_help()
     print_ln("                  Format <Katana> <modeling> <translate command>");
     print_ln("                  <target file> <delta x> <delta y> <delta z>");
     skip_ln();
-    print_ln("                  e.g. ./Katana -modeling -t data/shape.geo ");
+    print_ln("                  e.g. ./katana -modeling -t data/shape.geo ");
     print_ln("                  1000 0 1000");
     skip_ln();
     print_ln(" ^ -r             Rotate entire .geo file. Also perform coherence");
@@ -292,7 +292,7 @@ void UI::print_help()
     print_ln("                  <target file> <origin x> <origin y> <origin z>");
     print_ln("                  <theta x> <theta y> <theta z>");
     skip_ln();
-    print_ln("                  e.g. ./Katana -modeling -r data/shape.geo");
+    print_ln("                  e.g. ./katana -modeling -r data/shape.geo");
     print_ln("                  0 0 0 30 30 30");
     skip_ln();
     print_ln(" ^ -scale         Scale entire .geo file. Also perform coherence");
@@ -304,7 +304,7 @@ void UI::print_help()
     print_ln("                  <target file> <output file location>");
     print_ln("                  <scaling factor>");
     skip_ln();
-    print_ln("                  e.g. ./Katana -modeling -scale data/shape.geo");
+    print_ln("                  e.g. ./katana -modeling -scale data/shape.geo");
     print_ln("                  data/smaller_shape.geo 1e-2");
     skip_ln();
     print_ln(" \"-meshops\"       Meshfile manipulations module.");
@@ -318,13 +318,13 @@ void UI::print_help()
     print_ln("                  Format <Katana> <mesh file operations> <Silver Lining Command>");
     print_ln("                  <target mesh> <geo output path> ");
     skip_ln();
-    print_ln("                  e.g. ./Katana -meshops -s data/f_out.msh data/convert.geo");
+    print_ln("                  e.g. ./katana -meshops -s data/f_out.msh data/convert.geo");
     skip_ln();
     print_ln(" ^ -v             Calculate all Gmsh .msh \"Physical Volume\" values in mesh file.");
     skip_ln();
     print_ln("                  Format <Katana> <mesh file operations> <Volume Command>");
     skip_ln();
-    print_ln("                  e.g. ./Katana -meshops -v data/example.msh");
+    print_ln("                  e.g. ./katana -meshops -v data/example.msh");
     skip_ln();
     print_ln("If you have run into a bug or issue, please log it at");
     print_ln("github.com/HeinrichHerbst/Katana/issues");
