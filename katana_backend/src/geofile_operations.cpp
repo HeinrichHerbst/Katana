@@ -699,7 +699,7 @@ int GEO::geofile::export_geofile(std::string export_path)
         }
         pv_loop << *pv_inside_loop_iter;
         std::string pv_string = pv_loop.str();
-        gf_geometry_file    << "Physical Surface(\""  << pv_iter->first
+        gf_geometry_file    << "Physical Volume(\""  << pv_iter->first
                             << "\") = {"
                             << pv_string
                             << "};"     << "\n";
