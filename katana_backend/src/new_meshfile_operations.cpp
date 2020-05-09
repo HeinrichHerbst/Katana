@@ -195,7 +195,8 @@ int MSH::mesh_file::print_volumes()
                                                     nodes_map[i->second.node_vect[1]],
                                                     nodes_map[i->second.node_vect[2]],
                                                     nodes_map[i->second.node_vect[3]] );
-                    volumes_vect[i->second.tags[0]-1] = volumes_vect[i->second.tags[0]-1] + tet_vol;
+                    int location = i->second.tags[1]-1;
+                    volumes_vect[location] = volumes_vect[location] + tet_vol;
                 }
                 else
                 {
