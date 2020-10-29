@@ -14,6 +14,7 @@
 #include "ldf_process.hpp"
 #include "stitching.hpp"
 #include "t_interface.hpp"
+#include "three_dim_model.hpp"
 #include "meshfile_operations.hpp"
 #include "new_meshfile_operations.hpp"
 
@@ -22,6 +23,7 @@ namespace ARG_MODE
 {
     enum string_code {
         eDefault,
+        e3DModel,
         eHelp,
         eMeshops,
         eModeling,
@@ -29,6 +31,7 @@ namespace ARG_MODE
         eVersion
     };
     string_code hashit (std::string const& inString) {
+        if ((inString == "-3DModel")||(inString == "-3dmodel"))   return e3DModel;
         if ((inString == "-Help")||(inString == "-help"))   return eHelp;
         if ((inString == "-Meshops")||(inString == "-meshops")) return eMeshops;
         if ((inString == "-Slice")||(inString == "-slice")) return eSlice;
@@ -48,6 +51,9 @@ void UI::argument_mode(int &argc, char *argv[])
     {
     case ARG_MODE::eHelp:
         print_help();
+        break;
+    case ARG_MODE::e3DModel:
+        gather_3D_arg(argc,argv);
         break;
     case ARG_MODE::eMeshops:
         gather_meshops_arg(argc, argv);
@@ -83,7 +89,8 @@ void UI::main_menu()
         print_ln(" 1 - Generate FLOOXS input script.");
         print_ln(" 2 - Manipulate model geometry.");
         print_ln(" 3 - Mesh file operations.");
-        print_ln(" 4 - Help with Katana.");
+        print_ln(" 4 - Generate 3D Model from layout.");
+        print_ln(" 5 - Help with Katana.");
     int choice = get_choice();
     bool accepted = false;
     while (accepted == false)
@@ -103,6 +110,10 @@ void UI::main_menu()
             accepted = true;
             break;
         case 4:
+            gather_3DGen_interactive();
+            accepted = true;
+            break;
+        case 5:
             print_help();
             accepted = true;
             break;
@@ -112,7 +123,8 @@ void UI::main_menu()
             print_ln(" 1 - Generate FLOOXS input script.");
             print_ln(" 2 - Manipulate model geometry.");
             print_ln(" 3 - Mesh file operations.");
-            print_ln(" 4 - Help with Katana.");
+            print_ln(" 4 - Generate 3D Model from layout.");
+            print_ln(" 5 - Help with Katana.");
             choice = get_choice();
             break;
         }
@@ -279,21 +291,22 @@ void UI::print_help()
     print_ln("                  optimization and file simplification.");
     skip_ln();
     print_ln("                  Format <Katana> <modeling> <translate command>");
-    print_ln("                  <target file> <delta x> <delta y> <delta z>");
+    print_ln("                  <target infile> <target outfile>");
+    print_ln("                  <delta x> <delta y> <delta z>");
     skip_ln();
-    print_ln("                  e.g. ./katana -modeling -t data/shape.geo ");
-    print_ln("                  1000 0 1000");
+    print_ln("                  e.g. ./katana -modeling -t data/inshape.geo ");
+    print_ln("                  data/outshape.geo 1000 0 1000");
     skip_ln();
     print_ln(" ^ -r             Rotate entire .geo file. Also perform coherence");
     print_ln("                  optimization and file simplification. Angles in");
     print_ln("                  degrees.");
     skip_ln();
     print_ln("                  Format <Katana> <modeling> <rotate command>");
-    print_ln("                  <target file> <origin x> <origin y> <origin z>");
-    print_ln("                  <theta x> <theta y> <theta z>");
+    print_ln("                  <target infile> <target outfile> <origin x> <origin y>");
+    print_ln("                  <origin z> <theta x> <theta y> <theta z>");
     skip_ln();
-    print_ln("                  e.g. ./katana -modeling -r data/shape.geo");
-    print_ln("                  0 0 0 30 30 30");
+    print_ln("                  e.g. ./katana -modeling -r data/inshape.geo");
+    print_ln("                  data/outshape.geo 0 0 0 30 30 30");
     skip_ln();
     print_ln(" ^ -scale         Scale entire .geo file. Also perform coherence");
     print_ln("                  optimization and file simplification. Requires");
@@ -325,6 +338,38 @@ void UI::print_help()
     print_ln("                  Format <Katana> <mesh file operations> <Volume Command>");
     skip_ln();
     print_ln("                  e.g. ./katana -meshops -v data/example.msh");
+    skip_ln();
+    print_ln(" \"-3dmodel\"       Create a Python script which generates a 3D process modelled");
+    print_ln("                  representation of a circuit when given the following parameters:");
+    print_ln("                  1 - The GDS mask layout file of specified circuit");
+    print_ln("                  2 - The process information file for the desired fab. process");
+    print_ln("                  3 - The path to where the contours for the fabrication process");
+    print_ln("                      are stored. The contour must conform to the rules specified");
+    print_ln("                      below.");
+    print_ln("                  4 - The path and desired name of the Python script");
+    skip_ln();
+    print_ln("                  Format <Katana> <model command> <gds path>");
+    print_ln("                  <pif path> <contours path> <output path>");
+    skip_ln();
+    print_ln("                  e.g. ./katana -3dmodel data/JTL.gds data/mitll_sfq5ee.pf");
+    print_ln("                  data/3DGen data/3DGen/JTLModelOutputScript.py");
+    skip_ln();
+    print_ln("                  Rules for contour .geo:");
+    print_ln("                  Use approximately 5 of the most relevant points in contour.");
+    print_ln("                  Points must be listed x_low to x_high, z_low to z_high.");
+    print_ln("                  Y-Values must remain 0.");
+    print_ln("                  File name must match layer_thickness of layer in .pf file.");
+    print_ln("                  eg \"200_contour.geo\".");
+    print_ln("                  Lines must link points. See example of 200_contour.geo:");
+    print_ln("                  Point(1) = {0, 0, 0, 1e3};");
+    print_ln("                  Point(2) = {9.74, 0, 44.94, 1e3};");
+    print_ln("                  Point(3) = {11.9, 0, 144.97, 1e3};");
+    print_ln("                  Point(4) = {37.93, 0, 187.78, 1e3};");
+    print_ln("                  Point(5) = {95, 0, 200, 1e3};");
+    print_ln("                  Line(1) = {1, 2};");
+    print_ln("                  Line(2) = {2, 3};");
+    print_ln("                  Line(3) = {3, 4};");
+    print_ln("                  Line(4) = {4, 5};");
     skip_ln();
     print_ln("If you have run into a bug or issue, please log it at");
     print_ln("github.com/HeinrichHerbst/Katana/issues");
@@ -439,6 +484,73 @@ void UI::gather_mesh_interactive()
     }
 }
 
+void UI::gather_3DGen_interactive()
+{
+    std::string gds_in;
+    std::string pf_in;
+    std::string cont_in;
+    std::string pyname_in;
+    std::string enable_multi;
+    bool multi_flag = false;
+    print_ln("Please enter path to .gds file:");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+    getline(std::cin, gds_in);
+    print_ln("Using \"" + gds_in + "\" as mesh file path.");
+    skip_ln();
+
+    print_ln("Please enter path to .pf file:");
+    getline(std::cin, pf_in);
+    std::cout<<"Using \"" << pf_in << "\" as output file path."<< std::endl;
+    skip_ln();
+
+    print_ln("Please enter path to contours folder");
+    print_ln("e.g. data/3DGen/MITLL_Contours");
+    getline(std::cin, cont_in);
+    std::cout<<"Using \"" << cont_in << "\" as contours folder path."<< std::endl;
+    skip_ln();
+
+    print_ln("Please enter path desired name of output Python script");
+    print_ln("e.g. data/3DGen/my_output_circuit.py");
+    getline(std::cin, pyname_in);
+    std::cout<<"Using \"" << pyname_in << "\" as output script target."<< std::endl;
+    skip_ln();
+
+    print_ln("Enable multiprocessing? [y/n]");
+    getline(std::cin, enable_multi);
+    std::cout<<"Using \"" << enable_multi << "\" as multiprocessing answer."<< std::endl;
+    if ((*enable_multi.begin()=='y')||(*enable_multi.begin()=='Y'))
+        multi_flag = true;
+    else
+        print_ln("No yes detected: Python multiprocessing disabled.");
+    skip_ln();
+    print_ln("Attempting generation with specified parameters...");
+    skip_ln();
+    skip_ln();
+    std::vector<std::string> split_str_vec;
+    boost::split(split_str_vec, gds_in, boost::is_any_of("."));
+    std::string extension = *std::prev(split_str_vec.end(),1);
+    if ((extension=="GDS")||(extension=="gds")||(extension=="GDSII"))
+        {
+            split_str_vec.clear();
+            boost::split(split_str_vec, pf_in, boost::is_any_of("."));
+            std::string extension = *std::prev(split_str_vec.end(),1);
+            if((extension=="pf")||(extension=="PF"))
+            {
+                MODEL3D::three_dim_model model_data;
+                if(model_data.generate_model(gds_in, pf_in, pyname_in, cont_in, multi_flag)==EXIT_FAILURE)
+                    print_ln("Error: GDS import failure.");
+            }
+            else
+            {
+                print_ln("Error: Second input file not recognized as .PF (Process File).");
+            }
+        }
+        else
+        {
+            print_ln("Error: Input file not recognized as GDS.");
+        }
+}
+
 void UI::gather_volume_calc_interactive()
 {
     std::string msh_in;
@@ -490,7 +602,7 @@ void UI::gather_rotate_interactive()
         GEO::geofile input_geo;
         if (input_geo.import_geofile(geo_in)==EXIT_SUCCESS)
         {
-            input_geo.make_coherent();
+            input_geo.make_coherent(true);
             input_geo.simplify_data();
             if (input_geo.rotate_data(d_ox, d_oy, d_oz, d_tx, d_ty, d_tz)==EXIT_SUCCESS)
             {
@@ -590,6 +702,58 @@ void UI::gather_append_interactive()
         argc++;
     }
     execute_simple_append_interactive(first_geo,second_geo,output_geo,char_len);
+}
+
+void UI::gather_3D_arg(int &argc, char *argv[])
+{
+    if (argc >= 6)
+    {
+        std::string gds_path = argv[2];
+        std::vector<std::string> split_str_vec;
+        boost::split(split_str_vec, gds_path, boost::is_any_of("."));
+        std::string extension = *std::prev(split_str_vec.end(),1);
+        if ((extension=="GDS")||(extension=="gds")||(extension=="GDSII"))
+        {
+            std::string pif_path = argv[3];
+            split_str_vec.clear();
+            boost::split(split_str_vec, pif_path, boost::is_any_of("."));
+            std::string extension = *std::prev(split_str_vec.end(),1);
+            if((extension=="pf")||(extension=="PF"))
+            {
+            bool multi_flag = false;
+                if(argc==7)
+                {
+                    std::string mp_string = argv[6];
+                    if(mp_string=="--multi")
+                    {
+                        multi_flag = true;
+                        print_ln("FreeCAD Multiprocessing enabled.");
+                    }
+                    else
+                    {
+                        print_ln("Warning: Fourth argument unrecognized. Disabling multiprocessing.");
+                    }
+                }
+                MODEL3D::three_dim_model model_data;
+                std::string cont_path = argv[4];
+                std::string py_path = argv[5];
+                if(model_data.generate_model(gds_path, pif_path, py_path, cont_path, multi_flag)==EXIT_FAILURE)
+                    print_ln("Error: Cannot generate model without GDS.");
+            }
+            else
+            {
+                print_ln("Error: Second input file not recognized as .PF (Process File).");
+            }
+        }
+        else
+        {
+            print_ln("Error: Input file not recognized as GDS.");
+        }
+    }
+    else
+    {
+        print_ln("Error: Incorrect argument count.");
+    }
 }
 
 void UI::gather_merge_interactive()
@@ -932,7 +1096,7 @@ void UI::execute_translate(int &argc, char *argv[])
             double del_z = std::stod(argv[7]);
             if(primary_geofile.import_geofile(input_path)==EXIT_SUCCESS)
             {
-                primary_geofile.make_coherent();
+                primary_geofile.make_coherent(true);
                 primary_geofile.simplify_data();
                 if(primary_geofile.translate_data(del_x, del_y, del_z)==EXIT_SUCCESS)
                 {

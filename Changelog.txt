@@ -1,3 +1,13 @@
+1.0 Release:
+```
+ # Katana can now generate 3D process-modelled representations
+   of circuit files when given the GDS file, fabrication contours
+   and fabrication process information.
+ # Katana input paths are specified relative to the application folder.
+ # Multiple minor bugfixes and modelling optimization.
+
+```
+
 0.9.4 Release:
 ```
  # Katana now correctly treats .geo "Surface" as "Plane Surface".

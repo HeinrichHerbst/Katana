@@ -10,6 +10,9 @@
 
 int main(int argc, char *argv[])
 {
+    //create data folder if doesn't exist
+    std::filesystem::create_directory("data");
+    std::filesystem::create_directory("data/3DGen");
     if (argc==1)
     {
         UI::interactive_mode();

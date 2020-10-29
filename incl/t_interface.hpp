@@ -10,8 +10,9 @@
 #include <string>
 #include <cctype>
 #include <vector>
+#include <filesystem>
 
-constexpr auto CURRENT_VERSION = 0.94;   // T for terminal
+constexpr auto CURRENT_VERSION = 1.0;   // T for terminal
 namespace UI
 {
     void print_ln(std::string line);
@@ -24,12 +25,14 @@ namespace UI
     int get_choice();
     void interactive_mode();
     void argument_mode(int &argc, char *argv[]);
+    void gather_3D_arg(int &argc, char *argv[]);
     void gather_slice_arg(int &argc, char *argv[]);
     void gather_modeling_arg(int &argc, char *argv[]);
     void gather_meshops_arg(int &argc, char *argv[]);
     void gather_slice_interactive();
     void gather_modeling_interactive();
     void gather_mesh_interactive();
+    void gather_3DGen_interactive();
     void gather_silver_linings_interactive();
     void execute_silver_linings(std::string mesh_in, std::string geo_out);
     void execute_volume_calculator(const std::string &mesh_in);

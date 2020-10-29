@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(katana VERSION 0.9.4)
+project(katana VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,13 +40,14 @@ target_include_directories(clipper PUBLIC $ENV{CLIPPER_PATH})
 add_library(katana_backend
             katana_backend/src/drawing.cpp
             katana_backend/src/flooxs_gen.cpp
+            katana_backend/src/geofile_operations.cpp
             katana_backend/src/ldf_process.cpp
             katana_backend/src/meshfile_operations.cpp
             katana_backend/src/new_meshfile_operations.cpp
             katana_backend/src/pipolly.cpp
             katana_backend/src/section.cpp
             katana_backend/src/stitching.cpp
-            katana_backend/src/geofile_operations.cpp
+            katana_backend/src/three_dim_model.cpp
             )
 target_include_directories(katana_backend PUBLIC katana_backend/incl)
 
@@ -55,5 +56,5 @@ target_include_directories( ${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/incl)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE gdscpp)
 target_link_libraries(katana_backend PRIVATE gdscpp)
-target_link_libraries(katana_backend PRIVATE clipper)
+target_link_libraries(katana_backend PUBLIC clipper)
 target_link_libraries(${PROJECT_NAME} PRIVATE katana_backend)

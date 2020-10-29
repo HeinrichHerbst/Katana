@@ -156,6 +156,46 @@ int section_data::populate_polygons(gdscpp &gds_file)
 }
 
 /**
+ *  @brief Variant of above function that populates polygon data with ALL elements in GDS file
+ *          (Doesn't perform intercept check)
+ *  @param gds_file Gds file which holds the structure information
+ * @param polygons Map to extract polygons into.
+ *  @return 0 - Function completed successfully.
+ */
+int section_data::extract_all_polygons( gdscpp &gds_file,
+                                        std::map<unsigned int, std::vector<co_ord>> &polygons)
+{
+  vector<gdsSTR> structure_vector;
+  unordered_map<string, int> structure_lookup;
+  gds_file.getSTR(structure_vector, structure_lookup);
+  for (auto str_it = structure_vector.begin(); str_it != structure_vector.end();
+       str_it++) {
+    if (str_it->heirarchical_level == 0)
+    {
+      std::map<unsigned int, std::vector<co_ord>> polygon_data;
+      recursive_unpack(str_it->name, structure_vector, structure_lookup,
+                        polygon_data);
+      // append polygon data to polygons map
+      for (auto poly_it = polygon_data.begin();
+            poly_it != polygon_data.end();
+            poly_it++)
+        {
+        if (polygons.count(poly_it->first) > 0)
+        {
+          polygons[poly_it->first].insert(polygons[poly_it->first].end(),
+                                          poly_it->second.begin(),
+                                          poly_it->second.end());
+        } else {
+          polygons.insert(pair<unsigned int, vector<co_ord>>(
+          poly_it->first, poly_it->second));
+        }
+      }
+    }
+  }
+  return EXIT_SUCCESS;
+}
+
+/**
  *  @brief Checks if intercept interacts with bounding box
  *  @param bounding_box[4] Holds the bounding box
  *  @return true = interacts, false = doesn't interact
@@ -341,13 +381,12 @@ int process_paths(
     std::map<unsigned int, std::vector<co_ord>> &poly_map_destination)
 {
   auto path_iter = current_paths.begin();
-  int key = 0;
   co_ord temp_co;
   while (path_iter != current_paths.end()) {
     path_to_polygon(*path_iter, temp_co);
-    if (poly_map_destination.count(key) > 0) // append
+    if (poly_map_destination.count(path_iter->layer) > 0) // append
     {
-      poly_map_destination[key].push_back(temp_co);
+      poly_map_destination[path_iter->layer].push_back(temp_co);
     } else {
       vector<co_ord> new_vector;
       new_vector.push_back(temp_co);
@@ -518,11 +557,15 @@ void repeat_polygon_map(std::map<unsigned int, std::vector<co_ord>> &target,
                       (int)round((double)(aref_info.yCorCol - aref_info.yCor) /
                                  aref_info.rowCnt)};
   // perform repeated placement , each layer, each vector, offset and append
-  for (auto layer_it = target.begin(); layer_it != target.end(); layer_it++) {
+  for (auto layer_it = target.begin(); layer_it != target.end(); layer_it++)
+  {
     for (auto polygon_it = layer_it->second.begin();
-         polygon_it != layer_it->second.end(); polygon_it++) {
-      for (int i = 1; i <= aref_info.colCnt; i++) {
-        for (int j = 1; j <= aref_info.rowCnt; j++) {
+         polygon_it != layer_it->second.end(); polygon_it++)
+    {
+      for (int i = 0; i <= aref_info.colCnt-1; i++)
+      {
+        for (int j = 0; j <= aref_info.rowCnt-1; j++)
+        {
           co_ord shifted_polygon = *polygon_it;
           std::transform(shifted_polygon.x.begin(), shifted_polygon.x.end(),
                          shifted_polygon.x.begin(),
@@ -653,7 +696,7 @@ int section_data::calculate_intercepts()
           p.x = x1;
           p.y = y1;
           auto v_end = vect.end();
-          for(auto v_it = vect.begin(); v_it!= v_end; v_it++)
+          for ( auto v_it = vect.begin(); v_it!= v_end; v_it++)
           {
             vector<Point> v_it_as_Point;
             co_ord_to_point_v(*v_it, v_it_as_Point);
@@ -953,7 +996,7 @@ int section_data::slice_angled_horiz(int line_start[2], int line_end[2],
   intercept_data tempy;
   // Solve linear equation
   double c = ya + ((xa * ya) - (xa * yb)) / (xb - xa);
-  double m = ((yb - ya) / (xb - xa));
+  double m = ((yb - ya) / (xb - xa)); 
   // y = mx + c    -    Solve for x using y value of horizontal line
   // x = (y1-c)/m  -    Does x lie within boundary of [xa,xb],
   //                   as well as within cross-section constraint

@@ -23,7 +23,6 @@ struct POINT
 };
 // ================== Function Declarations ===================
 int rotate_point(double cx, double cy, double angle, POINT &subject);
-
 // ====================== Function Code =======================
 
 /**
@@ -952,13 +951,18 @@ int gdscpp::calculate_STR_bounding_box(int structure_index, int *destination)
 
     if ((referred_bound_box[0] == 0) && (referred_bound_box[1] == 0) &&
         (referred_bound_box[2] == 0) && (referred_bound_box[3] == 0)) {
-      cout << "Warning: Structure being referenced does not have an initialized"
-           << endl;
-      cout << "bounding box. Therefore, bounding boxes of references will be "
-              "inaccurate."
-           << endl;
-      cout << "Calculate bounding boxes from the lowest level (unreferenced) "
-              "upwards."
+      // cout << "Warning: Structure being referenced does not have an
+      // initialized"
+      //      << endl;
+      // cout << "bounding box. Therefore, bounding boxes of references will be
+      // "
+      //         "inaccurate."
+      //      << endl;
+      // cout << "Calculate bounding boxes from the lowest level (unreferenced)
+      // "
+      //         "upwards."
+      //      << endl;
+      cout << "Warning: Inaccuracy due to structures not being initialized."
            << endl;
     }
     if (SREF_iter->reflection == true) // Reflect about x-axis

@@ -1,10 +1,10 @@
 # Katana EDA Process Modeling Assistant
-Last updated on 28 April, 2020.
-Katana is currently at version 0.94T. Commits will be published to the github page:
+Last updated on 29 October, 2020.
+Katana is currently at version 1.0T. Commits will be published to the github page:
 [Katana Github](https://github.com/HeinrichHerbst/Katana)
 
 # Overview
-Katana is an open-source process-modeling assistant & sectioning program. Katana allows a designer to peer into GDS files and generate two-dimensional Integrated Circuit (IC) cross-sections with the assistance of layer definition information. Additionally, Katana is capable of automatically generating a [FLOOXS](flooxs.ece.ufl.edu/) process-modeling input script. Katana can also combine multiple two-dimensional Gmsh .geo files and convert .msh files back into .geo files (mesh removal). The video below demonstrates typical use of the software. The video is of a pre-release version. See the Usage section for instructions on how to use the newest version.
+Katana is an open-source process-modeling assistant & sectioning program. The program is capable of generating process-modelled 3D models of RSFQ cells by leveraging the FreeCAD engine. These models are generally used for improved electrical parameter extraction of superconducting electronic circuits. Katana also allows a designer to peer into GDS files and generate two-dimensional Integrated Circuit (IC) cross-sections with the assistance of layer definition information. Additionally, Katana is capable of automatically generating a [FLOOXS](flooxs.ece.ufl.edu/) process-modeling input script. Katana can combine multiple two-dimensional Gmsh .geo files and convert .msh files back into .geo files (mesh removal). The video below demonstrates typical use of the software. The video is of a pre-release version. See the Usage section for instructions on how to use the newest version.
 [![Katana Demonstration](https://img.youtube.com/vi/CsfjJpd8BOQ/0.jpg)](https://www.youtube.com/watch?v=CsfjJpd8BOQ)
 
 # Changelog
@@ -19,6 +19,22 @@ The following input arguments may be used:
 
     -version
         Print the current version of Katana.
+```
+Katana is primarily used to generate 3D models of RSFQ cells:
+
+```
+    -3dmodel
+        Create a Python script which generates a 3D process-modelled representation
+        of a circuit when given the following parameters:
+        1 - The GDS mask layout file of specified circuit
+        2 - The process information file for the desired fabrication process
+        3 - The path to where the contours for the fabrication process are stored
+        4 - The path and desired name of the Python script
+
+        Format <Katana> <model command> <gds path> <pif path> <contours path> <output path>
+
+        e.g. ./katana -3dmodel data/JTL.gds data/mitll_sfq5ee.pf data/3DGen
+             data/3DGen/JTLModelOutputScript.py
 ```
 
 Katana is capable of generating cross sections of circuits from mask and process information:
@@ -175,3 +191,7 @@ cd release
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
+
+# A note on Python virtual environments
+Katana uses the FreeCAD Python API to generate 3D models of RSFQ cells. The generated Python scripts have been tested with
+FreeCAD V0.19, which uses Python 3.8.4. To ensure compatibility, we recommend that you use a virtual environment with this matching version of Python. The "requirements.txt" file contains the requirements of the virtual environment we used to create functional 3D models. See https://youtu.be/Kg1Yvry_Ydk for a guide to using virtual environments on Linux. See https://gist.github.com/HeinrichHerbst/67ac01d84fbd1c8339ec46f0e23d43f4 for our guide to setting up the correct Python venv on Windows using VS Code.

@@ -11,17 +11,64 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <chrono>
 
 namespace GEO{
-
+    //--------------------------- POINT ---------------------------
     struct point
     {
         double x, y, z, char_len;
+        bool operator<(const point& other) const
+        {
+            if (x != other.x)
+                return (x < other.x);
+
+            if (y != other.y)
+                return (y < other.y);
+
+            return (z < other.z);
+        }
+        bool operator>(const point& other) const
+        {
+            if (x != other.x)
+                return (x > other.x);
+
+            if (y != other.y)
+                return (y > other.y);
+
+            return (z > other.z);
+        }
+        bool operator==(const point& other) const
+        {
+            return ((x==other.x)&&(y==other.y)&&(z==other.z));
+        }
     };
     bool compare_point(const point &first, const point &second);
+    //--------------------------- LINE ---------------------------
     struct line
     {
         int start, end;
+    };
+    struct opti_line
+    {
+        int low, high;
+        bool reversed = false;
+        bool operator<(const opti_line& other) const
+        {
+            if (low != other.low)
+                return (low < other.low);
+            return (high < other.high);
+        }
+        bool operator>(const opti_line& other) const
+        {
+            if (low != other.low)
+                return (low > other.low);
+            return (high > other.high);
+        }
+        bool operator==(const opti_line& other) const
+        {
+            return ((low==other.low)&&(high==other.high));
+        }
     };
     int compare_line(const line &first, const line &second);
     bool check_same_vec(const std::vector<int> &first, const std::vector<int> &second);
@@ -34,6 +81,7 @@ namespace GEO{
         eChar_Len,
         eDefault,
         eLine,
+        eOpenCASCADE,
         eMesh_Spacing,
         ePhysical_Curve,
         ePhysical_Point,
@@ -58,6 +106,8 @@ namespace GEO{
         int export_geofile(std::string export_path);
         int simplify_data();
         int merge_with(geofile &secondary_file);
+        int quick_merge_with(geofile &secondary_file);
+        // noconflict merge TODO
         int translate_data( const double &delta_x,
                             const double &delta_y,
                             const double &delta_z );
@@ -65,8 +115,25 @@ namespace GEO{
                           const double &o_z,       const double &theta_x,
                           const double &theta_y,   const double &theta_z);
         int scale_data(const double factor);
-        void make_coherent();
+        void make_coherent(const bool &detailed);
+        //=========== coherence new ==============
+        void pull_points(std::vector<GEO::point> &in_vector);
+        int insert_points_map(std::map<int, point> &in_points_map);
+        int insert_lines_map(std::map<int, line> &in_lines_map);
+        int insert_curve_loops_map(const std::map<int, std::vector<int>> &in_curve_loops_map);
+        int insert_plane_surfaces_map(const std::map<int, int> &in_plane_surfaces_map);
+        int insert_surface_loops_map(const std::map<int, std::vector<int>> &in_surface_loops_map);
+        int insert_volumes_map(const std::map<int, int> &in_volumes_map);
+        void switch_to_OpenCASCADE();
+        void switch_off_OpenCASCADE();
+        void disable_char_len();
+        void enable_char_len();
+        void enable_bool_diff_rest_from_first();
     private:
+        std::chrono::_V2::system_clock::time_point start_time;
+        bool is_open_cascade = false;
+        bool ignore_char_len = false;
+        bool bool_diff_rest = false;
         double mesh_spacing;
         // Elementary entities
         std::map<int, point>            points_map;
@@ -81,6 +148,8 @@ namespace GEO{
         std::map<std::string, std::vector<int>> physical_surfaces_map;
         std::map<std::string, std::vector<int>> physical_volumes_map;
         // Private functions
+        void start_timer();
+        int get_microseconds();
         int simplify_element(int &current_status);
         void perform_shift( std::set<int> &gaps,
                             std::set<int> &numbers,
@@ -132,6 +201,17 @@ namespace GEO{
         int import_mesh_spacing(std::vector<std::string> &split_string_vector);
 
         int simplify_volumes();
+        //---------------------------------------------------------
+        void coherent_points();
+        void update_points( const std::map<point, int> &inv_point_map,
+                            const std::map<int, int> &point_adjustment_map);
+        void redirect_lines( const std::map<int, int> &point_adjustment_map);
+        void redirect_physical_points(const std::map<int, int> &point_adjustment_map);
+
+        void coherent_lines();
+        void update_lines( const std::map<int, int> &lines_adjustment_map);
+        void redirect_curve_loops(const std::map<int, int> &lines_adjustment_map);
+        // -----------------------------------------------------
         int adjust_volumes(std::map<int,int> changes);
         int merge_volumes(geofile &secondary_file);
 

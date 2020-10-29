@@ -98,6 +98,8 @@ private:
 
 public:
   int populate(int &xx1, int &yy1, int &xx2, int &yy2, gdscpp &gds_file);
+  int extract_all_polygons( gdscpp &gds_file,
+                            std::map<unsigned int, std::vector<co_ord>> &polygons );
   int pull_section_blocks(
       std::map<int, std::map<int, building_blocks>> &target_destination);
   int get_sec_dist();

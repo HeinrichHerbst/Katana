@@ -5,7 +5,6 @@
  * license:     MIT
  * Description: Function definitions for FLOOXS for Gmsh .geo geometry file manipulation.
  */
-#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -44,20 +43,15 @@ bool GEO::compare_point(const point &first, const point &second)
 // Returns 3 if lines are different
 int GEO::compare_line(const line &first, const line &second)
 {
-    if(first.start==second.start)
+    if (first.start==second.start)
     {
         if (first.end==second.end)
         {
             return 1;
         }
     }
-    if (first.start==second.end)
-    {
-        if (first.end==second.start)
-        {
-            return 2;
-        }
-    }
+    else if (first.start==second.end)
+        return 2;
     return 3;
 }
 
@@ -114,6 +108,7 @@ GEO::geo_argument GEO::hashit(std::string const& inString)
     if (inString == "Physical Surface") return GEO::ePhysical_Surface;
     if (inString == "Physical Volume")  return GEO::ePhysical_Volume;
     if (inString == "MeshSpac")         return GEO::eMesh_Spacing;
+    if (inString == "SetFactory")       return GEO::eOpenCASCADE;
     if (inString == "")                 return GEO::eBlank_Space;
     return GEO::eDefault;
 }
@@ -122,7 +117,8 @@ int GEO::geofile::import_geofile(std::string import_path)
     std::fstream geo_file;
     std::string file_buffer;
     geo_file.open(import_path, std::ios::in);
-    if (geo_file.is_open()) {
+    if (geo_file.is_open())
+    {
         int line_number =1;
         while (getline(geo_file, file_buffer))
         {
@@ -151,6 +147,9 @@ int GEO::geofile::import_geofile(std::string import_path)
             case eMesh_Spacing:
                 if(import_mesh_spacing(split_string_vector)==EXIT_FAILURE)
                     return EXIT_FAILURE;
+                break;
+            case eOpenCASCADE:
+                switch_to_OpenCASCADE();
                 break;
             case eSurface_loop:
                 if(import_surface_loop(split_string_vector, import_path, line_number)==EXIT_FAILURE)
@@ -205,6 +204,8 @@ int GEO::geofile::import_geofile(std::string import_path)
         }
         geo_file.close();
     }
+    else
+        return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }
 
@@ -218,7 +219,8 @@ int GEO::geofile::import_point( std::vector<std::string> &split_string_vector,
          (is_e_notation(split_string_vector[4])==true)&&
          ( (is_e_notation(split_string_vector[5])==true)||
            (split_string_vector[5]=="MeshSpac")||
-           (split_string_vector[5]=="cl__1") ) )
+           (split_string_vector[5]=="cl__1") )||
+           (split_string_vector[5]==";") )
     {
         point input_point;
         input_point.x = std::stod(split_string_vector[2]);
@@ -231,7 +233,10 @@ int GEO::geofile::import_point( std::vector<std::string> &split_string_vector,
         }
         else
         {
-            input_point.char_len = std::stod(split_string_vector[5]);
+            if (split_string_vector[5]!=";")
+                input_point.char_len = std::stod(split_string_vector[5]);
+            else
+                input_point.char_len = 0;
         }
         points_map.insert({std::stoi(split_string_vector[1]), input_point});
         return EXIT_SUCCESS;
@@ -254,8 +259,10 @@ int GEO::geofile::import_line( std::vector<std::string> &split_string_vector,
         (is_integer(split_string_vector[3])==true))
     {
         line input_line;
-        input_line.start = std::stod(split_string_vector[2]);
-        input_line.end = std::stod(split_string_vector[3]);
+        auto start = std::stoi(split_string_vector[2]);
+        auto end   = std::stoi(split_string_vector[3]);
+        input_line.start = start;
+        input_line.end = end;
         lines_map.insert({std::stoi(split_string_vector[1]), input_line});
         return EXIT_SUCCESS;
     }
@@ -310,7 +317,6 @@ int GEO::geofile::import_plane_surface( std::vector<std::string> &split_string_v
     split_string_vector.erase(it);
     it = std::prev(split_string_vector.end(),1);
     split_string_vector.erase(it);
-    it = split_string_vector.end();
     it = split_string_vector.begin();
     bool proceed = true;
     auto ssv_end = split_string_vector.end();
@@ -517,7 +523,6 @@ int GEO::geofile::export_geofile(std::string export_path)
         return EXIT_FAILURE;
     }
     std::ofstream gf_geometry_file;
-    std::string gf_print_buffer;
     std::string file_output_name = export_path;
     time_t log_attempt_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     gf_geometry_file.open( file_output_name, std::ios::out);
@@ -532,18 +537,29 @@ int GEO::geofile::export_geofile(std::string export_path)
     gf_geometry_file << "// -------------------------------------------------------------- //" << "\n";
     gf_geometry_file << "// File creation date = " << std::ctime(&log_attempt_time);
     gf_geometry_file << "//\n";
+    if(is_open_cascade==true){gf_geometry_file << "SetFactory(\"OpenCASCADE\");\n";}
     gf_geometry_file << "// ============================ POINTS ============================" << "\n";
     auto p_iter     = points_map.begin();
     auto p_iter_end = points_map.end();
     while (p_iter != p_iter_end)
     {
-        gf_geometry_file    << "Point(" << p_iter->first << ") = {"
-                            << p_iter->second.x << ", "
-                            << p_iter->second.y << ", "
-                            << p_iter->second.z << ", "
-                            << p_iter->second.char_len
-                            << "};"             << "\n";
-
+        if( (ignore_char_len==false) && (p_iter->second.char_len != 0) )
+        {
+            gf_geometry_file    << "Point(" << p_iter->first << ") = {"
+                                << p_iter->second.x << ", "
+                                << p_iter->second.y << ", "
+                                << p_iter->second.z << ", "
+                                << p_iter->second.char_len
+                                << "};"             << "\n";
+        }
+        else
+        {
+            gf_geometry_file    << "Point(" << p_iter->first << ") = {"
+                                << p_iter->second.x << ", "
+                                << p_iter->second.y << ", "
+                                << p_iter->second.z
+                                << "};"             << "\n";
+        }
         p_iter++;
     }
     gf_geometry_file << "// ============================ LINES =============================" << "\n";
@@ -552,12 +568,12 @@ int GEO::geofile::export_geofile(std::string export_path)
     while (l_iter != l_iter_end)
     {
         // Line(5) = {1, 5};
-        gf_geometry_file    << "Line("  << l_iter->first
-                            << ") = {"
-                            << l_iter->second.start
-                            << ", "
-                            << l_iter->second.end
-                            << "};"     << "\n";
+            gf_geometry_file    << "Line("  << l_iter->first
+                                << ") = {"
+                                << l_iter->second.start
+                                << ", "
+                                << l_iter->second.end
+                                << "};"     << "\n";
         l_iter++;
     }
     gf_geometry_file << "// ========================= CURVE LOOPS ==========================" << "\n";
@@ -705,6 +721,19 @@ int GEO::geofile::export_geofile(std::string export_path)
                             << "};"     << "\n";
         pv_iter++;
     }
+    if(bool_diff_rest==true)
+    {
+        gf_geometry_file << "BooleanDifference{ Volume{1}; Delete; }{\n";
+        auto vol_start = std::next(volumes_map.begin(),1);
+        auto vol_end = volumes_map.end();
+        int vol_count = 0;
+        for(auto vol_it = vol_start; vol_it!=vol_end;vol_it++)
+        {
+            vol_count = std::distance(volumes_map.begin(),vol_it)+1;
+            gf_geometry_file << "Volume{"<<vol_count<<"};\n";
+        }
+        gf_geometry_file << "Delete; }\n";
+    }
     gf_geometry_file.close();
     return EXIT_SUCCESS;
 }
@@ -719,7 +748,7 @@ int GEO::geofile::simplify_data()
         return EXIT_FAILURE;
     }
     int status = EXIT_SUCCESS;
-    for(int current_simplify = 0;
+    for ( int current_simplify = 0;
         (current_simplify < 6)&&(!status);
         current_simplify++)
     {
@@ -821,7 +850,7 @@ int GEO::geofile::simplify_points()
     {
         // Store all non-gaps
         point_it_end = points_map.end();
-        for (auto point_it = points_map.begin(); point_it != points_map.end(); point_it++)
+        for (auto point_it = points_map.begin(); point_it != point_it_end; point_it++)
         {
             numbers.insert(point_it->first);
         }
@@ -850,10 +879,10 @@ int GEO::geofile::adjust_points(std::map<int,int> changes)
     {
         for (auto i = changes.begin(); i != change_end; i++)
         {
-            if (l_it->second.start==i->first)
-                l_it->second.start= i->second;
-            if (l_it->second.end==i->first)
-                l_it->second.end= i->second;
+            if (l_it->second.start == i->first)
+                l_it->second.start = i->second;
+            if (l_it->second.end == i->first)
+                l_it->second.end = i->second;
         }
     }
     //Physical points
@@ -902,7 +931,7 @@ int GEO::geofile::simplify_lines()
     {
         // Store all non-gaps
         line_it_end = lines_map.end();
-        for (auto line_it = lines_map.begin(); line_it != lines_map.end(); line_it++)
+        for (auto line_it = lines_map.begin(); line_it != line_it_end; line_it++)
         {
             numbers.insert(line_it->first);
         }
@@ -973,7 +1002,7 @@ int GEO::geofile::simplify_curve_loops()
     {
         // Store all non-gaps
         curve_loop_it_end = curve_loops_map.end();
-        for (auto curve_loop_it = curve_loops_map.begin(); curve_loop_it != curve_loops_map.end(); curve_loop_it++)
+        for (auto curve_loop_it = curve_loops_map.begin(); curve_loop_it != curve_loop_it_end; curve_loop_it++)
         {
             numbers.insert(curve_loop_it->first);
         }
@@ -1245,8 +1274,8 @@ int GEO::geofile::adjust_volumes(std::map<int,int> changes)
 int GEO::geofile::merge_with(geofile &secondary_file)
 {
 // First simplify both files.
-    make_coherent();
-    secondary_file.make_coherent();
+    make_coherent(true);
+    secondary_file.make_coherent(true);
     simplify_data();
     secondary_file.simplify_data();
     if(!secondary_file.points_map.empty())
@@ -1262,8 +1291,34 @@ int GEO::geofile::merge_with(geofile &secondary_file)
     if(!secondary_file.volumes_map.empty())
         merge_volumes(secondary_file);
     merge_physical_entities(secondary_file);
-    make_coherent();
+    make_coherent(true);
     simplify_data();
+    return EXIT_SUCCESS;
+}
+
+// For when you know there will be no conflicts. Simply appent map 2 to map 1
+int GEO::geofile::quick_merge_with(geofile &secondary_file)
+{
+    points_map.insert(              secondary_file.points_map.begin(),
+                                    secondary_file.points_map.end() );
+    lines_map.insert(               secondary_file.lines_map.begin(),
+                                    secondary_file.lines_map.end() );
+    curve_loops_map.insert(         secondary_file.curve_loops_map.begin(),
+                                    secondary_file.curve_loops_map.end() );
+    plane_surfaces_map.insert(      secondary_file.plane_surfaces_map.begin(),
+                                    secondary_file.plane_surfaces_map.end() );
+    surface_loops_map.insert(       secondary_file.surface_loops_map.begin(),
+                                    secondary_file.surface_loops_map.end() );
+    volumes_map.insert(             secondary_file.volumes_map.begin(),
+                                    secondary_file.volumes_map.end() );
+    physical_points_map.insert(     secondary_file.physical_points_map.begin(),
+                                    secondary_file.physical_points_map.end() );
+    physical_curves_map.insert(     secondary_file.physical_curves_map.begin(),
+                                    secondary_file.physical_curves_map.end() );
+    physical_surfaces_map.insert(   secondary_file.physical_surfaces_map.begin(),
+                                    secondary_file.physical_surfaces_map.end() );
+    physical_volumes_map.insert(    secondary_file.physical_volumes_map.begin(),
+                                    secondary_file.physical_volumes_map.end() );
     return EXIT_SUCCESS;
 }
 
@@ -1476,37 +1531,32 @@ int GEO::geofile::merge_physical_points(geofile &secondary_file)
 {
     if (!physical_points_map.empty())
     {
-        auto physical_points_map_end = physical_points_map.end();
-        std::vector<std::string> marked_for_insert;
-        for ( auto phys_points_it = physical_points_map.begin();
-            phys_points_it != physical_points_map_end;
-            phys_points_it++)
+        if(!secondary_file.physical_points_map.empty())
         {
-            auto location = secondary_file.physical_points_map.find(phys_points_it->first);
-            auto sec_phys_p_map_end = secondary_file.physical_points_map.end();
-            if (location!=sec_phys_p_map_end)
+            for (auto i = secondary_file.physical_points_map.begin();
+                 i != secondary_file.physical_points_map.end(); i++)
             {
-                phys_points_it->second.insert(  phys_points_it->second.end(),
-                                                location->second.begin(),
-                                                location->second.end());
+                auto j = physical_points_map.find(i->first);
+                auto j_end = physical_points_map.end();
+                // Physical name already exists in first map.
+                // Append to element.
+                if (j!=j_end)
+                {
+                    j->second.insert(j->second.end(),i->second.begin(), i->second.end());
+                }
+                // Physical name not in first map
+                // Append physical name to first map.
+                else
+                {
+                    physical_points_map.insert({i->first,i->second});
+                }
             }
-            else
-            {
-                marked_for_insert.push_back(location->first);
-            }
-        }
-        auto marked_for_insert_end = marked_for_insert.end();
-        for (auto marked_it = marked_for_insert.begin();
-            marked_it != marked_for_insert_end;
-            marked_it++)
-        {
-            auto i = secondary_file.physical_points_map[*marked_it];
-            physical_points_map.insert({*marked_it,i});
         }
     }
     else
     {
-        physical_points_map = secondary_file.physical_points_map;
+        if (!secondary_file.physical_points_map.empty())
+            physical_points_map = secondary_file.physical_points_map;
     }
     return EXIT_SUCCESS;
 }
@@ -1515,37 +1565,32 @@ int GEO::geofile::merge_physical_curves(geofile &secondary_file)
 {
     if (!physical_curves_map.empty())
     {
-        auto physical_curves_map_end = physical_curves_map.end();
-        std::vector<std::string> marked_for_insert;
-        for ( auto phys_curves_it = physical_curves_map.begin();
-            phys_curves_it != physical_curves_map_end;
-            phys_curves_it++)
+        if(!secondary_file.physical_curves_map.empty())
         {
-            auto location = secondary_file.physical_curves_map.find(phys_curves_it->first);
-            auto sec_phys_cur_map_end = secondary_file.physical_curves_map.end();
-            if (location!=sec_phys_cur_map_end)
+            for (auto i = secondary_file.physical_curves_map.begin();
+                 i != secondary_file.physical_curves_map.end(); i++)
             {
-                phys_curves_it->second.insert(  phys_curves_it->second.end(),
-                                                location->second.begin(),
-                                                location->second.end());
+                auto j = physical_curves_map.find(i->first);
+                auto j_end = physical_curves_map.end();
+                // Physical name already exists in first map.
+                // Append to element.
+                if (j!=j_end)
+                {
+                    j->second.insert(j->second.end(),i->second.begin(), i->second.end());
+                }
+                // Physical name not in first map
+                // Append physical name to first map.
+                else
+                {
+                    physical_curves_map.insert({i->first,i->second});
+                }
             }
-            else
-            {
-                marked_for_insert.push_back(location->first);
-            }
-        }
-        auto marked_for_insert_end = marked_for_insert.end();
-        for (auto marked_it = marked_for_insert.begin();
-            marked_it != marked_for_insert_end;
-            marked_it++)
-        {
-            auto i = secondary_file.physical_curves_map[*marked_it];
-            physical_curves_map.insert({*marked_it,i});
         }
     }
     else
     {
-        physical_curves_map = secondary_file.physical_curves_map;
+        if (!secondary_file.physical_curves_map.empty())
+            physical_curves_map = secondary_file.physical_curves_map;
     }
     return EXIT_SUCCESS;
 }
@@ -1554,37 +1599,32 @@ int GEO::geofile::merge_physical_surfaces(geofile &secondary_file)
 {
     if (!physical_surfaces_map.empty())
     {
-        auto physical_surfaces_map_end = physical_surfaces_map.end();
-        std::vector<std::string> marked_for_insert;
-        for ( auto phys_surfaces_it = physical_surfaces_map.begin();
-            phys_surfaces_it != physical_surfaces_map_end;
-            phys_surfaces_it++)
+        if(!secondary_file.physical_surfaces_map.empty())
         {
-            auto location = secondary_file.physical_surfaces_map.find(phys_surfaces_it->first);
-            auto sec_phys_sur_map_end = secondary_file.physical_surfaces_map.end();
-            if (location!=sec_phys_sur_map_end)
+            for (auto i = secondary_file.physical_surfaces_map.begin();
+                 i != secondary_file.physical_surfaces_map.end(); i++)
             {
-                phys_surfaces_it->second.insert(    phys_surfaces_it->second.end(),
-                                                    location->second.begin(),
-                                                    location->second.end());
+                auto j = physical_surfaces_map.find(i->first);
+                auto j_end = physical_surfaces_map.end();
+                // Physical name already exists in first map.
+                // Append to element.
+                if (j!=j_end)
+                {
+                    j->second.insert(j->second.end(),i->second.begin(), i->second.end());
+                }
+                // Physical name not in first map
+                // Append physical name to first map.
+                else
+                {
+                    physical_surfaces_map.insert({i->first,i->second});
+                }
             }
-            else
-            {
-                marked_for_insert.push_back(location->first);
-            }
-        }
-        auto marked_for_insert_end = marked_for_insert.end();
-        for (auto marked_it = marked_for_insert.begin();
-            marked_it != marked_for_insert_end;
-            marked_it++)
-        {
-            auto i = secondary_file.physical_surfaces_map[*marked_it];
-            physical_surfaces_map.insert({*marked_it,i});
         }
     }
     else
     {
-        physical_surfaces_map = secondary_file.physical_surfaces_map;
+        if (!secondary_file.physical_surfaces_map.empty())
+            physical_surfaces_map = secondary_file.physical_surfaces_map;
     }
     return EXIT_SUCCESS;
 }
@@ -1593,267 +1633,41 @@ int GEO::geofile::merge_physical_volumes(geofile &secondary_file)
 {
     if (!physical_volumes_map.empty())
     {
-        auto physical_volumes_map_end = physical_volumes_map.end();
-        std::vector<std::string> marked_for_insert;
-        for ( auto phys_vol_it = physical_volumes_map.begin();
-            phys_vol_it != physical_volumes_map_end;
-            phys_vol_it++)
+        if(!secondary_file.physical_volumes_map.empty())
         {
-            auto location = secondary_file.physical_volumes_map.find(phys_vol_it->first);
-            auto sec_phys_vol_map_end = secondary_file.physical_volumes_map.end();
-            if (location!=sec_phys_vol_map_end)
+            for (auto i = secondary_file.physical_volumes_map.begin();
+                 i != secondary_file.physical_volumes_map.end(); i++)
             {
-                phys_vol_it->second.insert( phys_vol_it->second.end(),
-                                            location->second.begin(),
-                                            location->second.end());
+                auto j = physical_volumes_map.find(i->first);
+                auto j_end = physical_volumes_map.end();
+                // Physical name already exists in first map.
+                // Append to element.
+                if (j!=j_end)
+                {
+                    j->second.insert(j->second.end(),i->second.begin(), i->second.end());
+                }
+                // Physical name not in first map
+                // Append physical name to first map.
+                else
+                {
+                    physical_volumes_map.insert({i->first,i->second});
+                }
             }
-            else
-            {
-                marked_for_insert.push_back(location->first);
-            }
-        }
-        auto marked_for_insert_end = marked_for_insert.end();
-        for (auto marked_it = marked_for_insert.begin();
-            marked_it != marked_for_insert_end;
-            marked_it++)
-        {
-            auto i = secondary_file.physical_surfaces_map[*marked_it];
-            physical_surfaces_map.insert({*marked_it,i});
         }
     }
     else
     {
-        physical_volumes_map = secondary_file.physical_volumes_map;
+        if (!secondary_file.physical_volumes_map.empty())
+            physical_volumes_map = secondary_file.physical_volumes_map;
     }
     return EXIT_SUCCESS;
-}
-
-void GEO::geofile::make_coherent()
-{
-    std::map<int,int> changes;
-    // ---------- Search for duplicated points ----------
-    if (!points_map.empty())
-    {
-       auto main_pt_loop_end = std::prev(points_map.end());
-        for (auto main_pt_loop_it = points_map.begin();
-            main_pt_loop_it != main_pt_loop_end;
-            main_pt_loop_it++)
-        {
-            auto inner_pt_loop_end = points_map.end();
-            auto p_holder = main_pt_loop_it; p_holder++;
-            for (auto inner_pt_loop_it = p_holder;
-                inner_pt_loop_it != inner_pt_loop_end;
-                inner_pt_loop_it++)
-            {
-                if (compare_point(main_pt_loop_it->second, inner_pt_loop_it->second))
-                {
-                    p_holder = inner_pt_loop_it; p_holder--;
-                    changes.insert({ inner_pt_loop_it->first, main_pt_loop_it->first });
-                    points_map.erase(inner_pt_loop_it->first);
-                    inner_pt_loop_it = p_holder;
-                    inner_pt_loop_end = points_map.end();
-                    main_pt_loop_end = std::prev(points_map.end());
-                }
-            }
-        }
-        adjust_points(changes);
-        changes.clear();
-    }
-    // ---------- Search for duplicated lines -----------
-    if (!lines_map.empty())
-    {
-        auto main_ln_loop_end = std::prev(lines_map.end());
-        for (auto main_ln_loop_it = lines_map.begin();
-            main_ln_loop_it != main_ln_loop_end;
-            main_ln_loop_it++)
-        {
-            auto inner_ln_loop_end = lines_map.end();
-            auto ln_p_holder = main_ln_loop_it; ln_p_holder++;
-            for (auto inner_ln_loop_it = ln_p_holder;
-                inner_ln_loop_it != inner_ln_loop_end;
-                inner_ln_loop_it++)
-            {
-                int line_type = compare_line(main_ln_loop_it->second, inner_ln_loop_it->second);
-                switch (line_type)
-                {
-                case 1/*identical*/:
-                    ln_p_holder = inner_ln_loop_it; ln_p_holder--;
-                    changes.insert({inner_ln_loop_it->first,main_ln_loop_it->first});
-                    lines_map.erase(inner_ln_loop_it->first);
-                    inner_ln_loop_it = ln_p_holder;
-                    inner_ln_loop_end = lines_map.end();
-                    main_ln_loop_end = std::prev(lines_map.end());
-                    break;
-                case 2/*reversed*/:
-                    ln_p_holder = inner_ln_loop_it; ln_p_holder--;
-                    changes.insert({inner_ln_loop_it->first,-main_ln_loop_it->first});
-                    lines_map.erase(inner_ln_loop_it->first);
-                    inner_ln_loop_it = ln_p_holder;
-                    inner_ln_loop_end = lines_map.end();
-                    main_ln_loop_end = std::prev(lines_map.end());
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-        adjust_lines(changes);
-        changes.clear();
-    }
-    // ------- Search for duplicated curve loops --------
-    if (!curve_loops_map.empty())
-    {
-        auto main_cl_loop_end = std::prev(curve_loops_map.end());
-        for (auto main_cl_loop_it = curve_loops_map.begin();
-            main_cl_loop_it != main_cl_loop_end;
-            main_cl_loop_it++)
-        {
-            auto inner_cl_loop_end = curve_loops_map.end();
-            auto cl_p_holder = main_cl_loop_it; cl_p_holder++;
-            for (auto inner_cl_loop_it = cl_p_holder;
-                inner_cl_loop_it != inner_cl_loop_end;
-                inner_cl_loop_it++)
-            {
-                int curve_type = compare_vector(main_cl_loop_it->second, inner_cl_loop_it->second);
-                switch (curve_type)
-                {
-                case 1/*identical*/:
-                    cl_p_holder = inner_cl_loop_it; cl_p_holder--;
-                    changes.insert({inner_cl_loop_it->first,main_cl_loop_it->first});
-                    curve_loops_map.erase(inner_cl_loop_it->first);
-                    inner_cl_loop_it = cl_p_holder;
-                    inner_cl_loop_end = curve_loops_map.end();
-                    main_cl_loop_end = std::prev(curve_loops_map.end());
-                    break;
-                case 2/*reversed*/:
-                    cl_p_holder = inner_cl_loop_it; cl_p_holder--;
-                    changes.insert({inner_cl_loop_it->first,-main_cl_loop_it->first});
-                    curve_loops_map.erase(inner_cl_loop_it->first);
-                    inner_cl_loop_it = cl_p_holder;
-                    inner_cl_loop_end = curve_loops_map.end();
-                    main_cl_loop_end = std::prev(curve_loops_map.end());
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-        adjust_curve_loops(changes);
-        changes.clear();
-    }
-    // ------ Search for duplicated plane surfaces ------
-    if (!plane_surfaces_map.empty())
-    {
-        auto main_ps_loop_end = std::prev(plane_surfaces_map.end());
-        for (auto main_ps_loop_it = plane_surfaces_map.begin();
-            main_ps_loop_it != main_ps_loop_end;
-            main_ps_loop_it++)
-        {
-            auto inner_ps_loop_end = plane_surfaces_map.end();
-            auto ps_p_holder = main_ps_loop_it; ps_p_holder++;
-            for (auto inner_ps_loop_it = ps_p_holder;
-                inner_ps_loop_it != inner_ps_loop_end;
-                inner_ps_loop_it++)
-            {
-                if (main_ps_loop_it->second == inner_ps_loop_it->second)
-                {
-                    ps_p_holder = inner_ps_loop_it; ps_p_holder--;
-                    changes.insert({ inner_ps_loop_it->first, main_ps_loop_it->first });
-                    plane_surfaces_map.erase(inner_ps_loop_it->first);
-                    inner_ps_loop_it = ps_p_holder;
-                    inner_ps_loop_end = plane_surfaces_map.end();
-                    main_ps_loop_end = std::prev(plane_surfaces_map.end());
-                }
-            }
-        }
-        adjust_plane_surfaces(changes);
-        changes.clear();
-    }
-    // ------ Search for duplicated surface loops -------
-    if (!surface_loops_map.empty())
-    {
-        auto main_sur_loop_end = std::prev(surface_loops_map.end());
-        for (auto main_sur_loop_it = surface_loops_map.begin();
-            main_sur_loop_it != main_sur_loop_end;
-            main_sur_loop_it++)
-        {
-            auto inner_sur_loop_end = surface_loops_map.end();
-            auto sur_p_holder = main_sur_loop_it; sur_p_holder++;
-            for (auto inner_sur_loop_it = sur_p_holder;
-                inner_sur_loop_it != inner_sur_loop_end;
-                inner_sur_loop_it++)
-            {
-                int curve_type = compare_vector(main_sur_loop_it->second, inner_sur_loop_it->second);
-                switch (curve_type)
-                {
-                case 1/*identical*/:
-                    sur_p_holder = inner_sur_loop_it; sur_p_holder--;
-                    changes.insert({inner_sur_loop_it->first,main_sur_loop_it->first});
-                    curve_loops_map.erase(inner_sur_loop_it->first);
-                    inner_sur_loop_it = sur_p_holder;
-                    inner_sur_loop_end = surface_loops_map.end();
-                    main_sur_loop_end = std::prev(surface_loops_map.end());
-                    break;
-                case 2/*reversed*/:
-                    sur_p_holder = inner_sur_loop_it; sur_p_holder--;
-                    changes.insert({inner_sur_loop_it->first,-main_sur_loop_it->first});
-                    curve_loops_map.erase(inner_sur_loop_it->first);
-                    inner_sur_loop_it = sur_p_holder;
-                    inner_sur_loop_end = surface_loops_map.end();
-                    main_sur_loop_end = std::prev(surface_loops_map.end());
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-        adjust_surface_loops(changes);
-        changes.clear();
-    }
-    // --- Search for duplicated physical elemements ----
-    // Physical Points
-    auto pp_m_end = physical_points_map.end();
-    for(auto i = physical_points_map.begin();
-        i != pp_m_end;
-        i++)
-    {
-        std::sort(i->second.begin(),i->second.end());
-        i->second.erase( unique(i->second.begin(),i->second.end() ), i->second.end());
-    }
-    // Physical Curves
-    auto pc_m_end = physical_curves_map.end();
-    for(auto i = physical_curves_map.begin();
-        i != pc_m_end;
-        i++)
-    {
-        std::sort(i->second.begin(),i->second.end());
-        i->second.erase( unique(i->second.begin(),i->second.end() ), i->second.end());
-    }
-    // Physical Surfaces
-    auto ps_m_end = physical_surfaces_map.end();
-    for(auto i = physical_surfaces_map.begin();
-        i != ps_m_end;
-        i++)
-    {
-        std::sort(i->second.begin(),i->second.end());
-        i->second.erase( unique(i->second.begin(),i->second.end() ), i->second.end());
-    }
-    // Physical Volumes
-    auto pv_m_end = physical_volumes_map.end();
-    for(auto i = physical_volumes_map.begin();
-        i != pv_m_end;
-        i++)
-    {
-        std::sort(i->second.begin(),i->second.end());
-        i->second.erase( unique(i->second.begin(),i->second.end() ), i->second.end());
-    }
 }
 
 int GEO::geofile::translate_data(   const double &delta_x,
                                     const double &delta_y,
                                     const double &delta_z )
 {
-    make_coherent();
+    make_coherent(true);
     simplify_data();
     auto end = points_map.end();
     for (auto i = points_map.begin(); i != end; i++)
@@ -1877,7 +1691,7 @@ int GEO::geofile::rotate_data( const double &o_x,      const double &o_y,
                                 const double &o_z,      const double &theta_x,
                                 const double &theta_y,  const double &theta_z)
 {
-    make_coherent();
+    make_coherent(true);
     simplify_data();
     auto pm_end = points_map.end();
     for (auto i = points_map.begin(); i != pm_end; i++)
@@ -1889,7 +1703,7 @@ int GEO::geofile::rotate_data( const double &o_x,      const double &o_y,
 
 int GEO::geofile::scale_data(const double factor)
 {
-    make_coherent();
+    make_coherent(true);
     simplify_data();
     auto pm_end = points_map.end();
     for (auto i = points_map.begin(); i != pm_end; i++)
@@ -1983,3 +1797,500 @@ void GEO::geofile::rotate_Z(const double &theta, point &in_point)
     in_point.x = x;
     in_point.y = y;
 };
+
+// fills a vector of GEO::point with all the points in the geofile
+void GEO::geofile::pull_points(std::vector<GEO::point> &in_vector)
+{
+//std::map<int, point>            points_map;
+    if (points_map.size()>0)
+    {
+        auto pm_end = points_map.end();
+        for ( auto pm_it = points_map.begin();
+             pm_it != pm_end; pm_it++)
+        {
+            in_vector.push_back(pm_it->second);
+        }
+    }
+}
+
+int GEO::geofile::insert_points_map(std::map<int, point> &in_points_map)
+{
+    if(points_map.empty()==true)
+    {
+        auto pm_end = in_points_map.end();
+        for ( auto pm_it = in_points_map.begin(); pm_it != pm_end; pm_it++)
+        {
+            points_map.insert({pm_it->first, pm_it->second});
+        }
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        std::cout<<"Error: Cannot insert fresh points_map into existing GEO file."<<std::endl;
+        std::cout<<"Rather create new geo file and merge."<<std::endl;
+        return EXIT_FAILURE;
+    }
+}
+int GEO::geofile::insert_lines_map(std::map<int, line> &in_lines_map)
+{
+    if(lines_map.empty()==true)
+    {
+        auto lm_end = in_lines_map.end();
+        for ( auto lm_it = in_lines_map.begin(); lm_it != lm_end; lm_it++)
+        {
+            lines_map.insert({lm_it->first, lm_it->second});
+        }
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        std::cout<<"Error: Cannot insert fresh lines_map into existing GEO file."<<std::endl;
+        std::cout<<"Rather create new geo file and merge."<<std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+int GEO::geofile::insert_curve_loops_map(const std::map<int, std::vector<int>> &in_curve_loops_map)
+{
+    if(curve_loops_map.empty()==true)
+    {
+        auto clm_end = in_curve_loops_map.end();
+        for ( auto clm_it = in_curve_loops_map.begin(); clm_it != clm_end; clm_it++)
+        {
+            curve_loops_map.insert({clm_it->first, clm_it->second});
+        }
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        std::cout<<"Error: Cannot insert fresh curves loop map into existing GEO file."<<std::endl;
+        std::cout<<"Rather create new geo file and merge."<<std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+int GEO::geofile::insert_plane_surfaces_map(const std::map<int, int> &in_plane_surfaces_map)
+{
+    if(plane_surfaces_map.empty()==true)
+    {
+        auto psm_end = in_plane_surfaces_map.end();
+        for ( auto psm_it = in_plane_surfaces_map.begin(); psm_it != psm_end; psm_it++)
+        {
+            plane_surfaces_map.insert({psm_it->first, psm_it->second});
+        }
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        std::cout<<"Error: Cannot insert fresh plane_surfaces into existing GEO file."<<std::endl;
+        std::cout<<"Rather create new geo file and merge."<<std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+int GEO::geofile::insert_surface_loops_map(const std::map<int, std::vector<int>> &in_surface_loops_map)
+{
+    if(surface_loops_map.empty()==true)
+    {
+        auto slm_end = in_surface_loops_map.end();
+        for ( auto slm_it = in_surface_loops_map.begin(); slm_it != slm_end; slm_it++)
+        {
+            surface_loops_map.insert({slm_it->first, slm_it->second});
+        }
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        std::cout<<"Error: Cannot insert fresh surface loops into existing GEO file."<<std::endl;
+        std::cout<<"Rather create new geo file and merge."<<std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+int GEO::geofile::insert_volumes_map(const std::map<int, int> &in_volumes_map)
+{
+    if(volumes_map.empty()==true)
+    {
+        auto vm_it_end = in_volumes_map.end();
+        for ( auto vm_it = in_volumes_map.begin(); vm_it != vm_it_end; vm_it++)
+        {
+            volumes_map.insert({vm_it->first, vm_it->second});
+        }
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        std::cout<<"Error: Cannot insert fresh volumes into existing GEO file."<<std::endl;
+        std::cout<<"Rather create new geo file and merge."<<std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+void GEO::geofile::switch_to_OpenCASCADE()
+{
+    is_open_cascade = true;
+}
+void GEO::geofile::switch_off_OpenCASCADE()
+{
+    is_open_cascade = false;
+}
+
+void GEO::geofile::disable_char_len()
+{
+    ignore_char_len = true;
+}
+
+void GEO::geofile::enable_char_len()
+{
+    ignore_char_len = false;
+}
+
+/**
+ * [Make Coherent]
+ * Removes all duplicated entities from the file
+ * @param  detailed    [If set to true, searches through all elements and physical elements]
+ *                      If set to false, only removes duplicate points, lines and redirects
+ *                      curve loops to unique entries.
+ */
+void GEO::geofile::make_coherent(const bool &detailed)
+{
+    // start_timer();                                                                      //DEBUG
+    coherent_points();
+    // std::cout << std::endl;                                                             //DEBUG
+    // std::cout << "Time: coherent_points = " << get_microseconds()/1e3 << std::endl;     //DEBUG
+    // start_timer();                                                                      //DEBUG
+    coherent_lines();
+    // std::cout << "Time: coherent_lines = " << get_microseconds()/1e3 << std::endl;      //DEBUG
+    // start_timer();                                                                      //DEBUG
+    if ( detailed==true)
+    {
+        std::map<int,int> changes;
+        // ------- Search for duplicated curve loops --------
+        if (!curve_loops_map.empty())
+        {
+            auto main_cl_loop_end = std::prev(curve_loops_map.end());
+            for (auto main_cl_loop_it = curve_loops_map.begin();
+                main_cl_loop_it != main_cl_loop_end;
+                main_cl_loop_it++)
+            {
+                auto inner_cl_loop_end = curve_loops_map.end();
+                auto cl_p_holder = main_cl_loop_it; cl_p_holder++;
+                for (auto inner_cl_loop_it = cl_p_holder;
+                    inner_cl_loop_it != inner_cl_loop_end;
+                    inner_cl_loop_it++)
+                {
+                    int curve_type = compare_vector(main_cl_loop_it->second, inner_cl_loop_it->second);
+                    switch (curve_type)
+                    {
+                    case 1/*identical*/:
+                        cl_p_holder = inner_cl_loop_it; cl_p_holder--;
+                        changes.insert({inner_cl_loop_it->first,main_cl_loop_it->first});
+                        curve_loops_map.erase(inner_cl_loop_it->first);
+                        inner_cl_loop_it = cl_p_holder;
+                        inner_cl_loop_end = curve_loops_map.end();
+                        main_cl_loop_end = std::prev(curve_loops_map.end());
+                        break;
+                    case 2/*reversed*/:
+                        cl_p_holder = inner_cl_loop_it; cl_p_holder--;
+                        changes.insert({inner_cl_loop_it->first,-main_cl_loop_it->first});
+                        curve_loops_map.erase(inner_cl_loop_it->first);
+                        inner_cl_loop_it = cl_p_holder;
+                        inner_cl_loop_end = curve_loops_map.end();
+                        main_cl_loop_end = std::prev(curve_loops_map.end());
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+            adjust_curve_loops(changes);
+            changes.clear();
+        }
+        // ------ Search for duplicated plane surfaces ------
+        if (!plane_surfaces_map.empty())
+        {
+            auto main_ps_loop_end = std::prev(plane_surfaces_map.end());
+            for (auto main_ps_loop_it = plane_surfaces_map.begin();
+                main_ps_loop_it != main_ps_loop_end;
+                main_ps_loop_it++)
+            {
+                auto inner_ps_loop_end = plane_surfaces_map.end();
+                auto ps_p_holder = main_ps_loop_it; ps_p_holder++;
+                for (auto inner_ps_loop_it = ps_p_holder;
+                    inner_ps_loop_it != inner_ps_loop_end;
+                    inner_ps_loop_it++)
+                {
+                    if (main_ps_loop_it->second == inner_ps_loop_it->second)
+                    {
+                        ps_p_holder = inner_ps_loop_it; ps_p_holder--;
+                        changes.insert({ inner_ps_loop_it->first, main_ps_loop_it->first });
+                        plane_surfaces_map.erase(inner_ps_loop_it->first);
+                        inner_ps_loop_it = ps_p_holder;
+                        inner_ps_loop_end = plane_surfaces_map.end();
+                        main_ps_loop_end = std::prev(plane_surfaces_map.end());
+                    }
+                }
+            }
+            adjust_plane_surfaces(changes);
+            changes.clear();
+        }
+        // ------ Search for duplicated surface loops -------
+        if (!surface_loops_map.empty())
+        {
+            auto main_sur_loop_end = std::prev(surface_loops_map.end());
+            for (auto main_sur_loop_it = surface_loops_map.begin();
+                main_sur_loop_it != main_sur_loop_end;
+                main_sur_loop_it++)
+            {
+                auto inner_sur_loop_end = surface_loops_map.end();
+                auto sur_p_holder = main_sur_loop_it; sur_p_holder++;
+                for (auto inner_sur_loop_it = sur_p_holder;
+                    inner_sur_loop_it != inner_sur_loop_end;
+                    inner_sur_loop_it++)
+                {
+                    int curve_type = compare_vector(main_sur_loop_it->second, inner_sur_loop_it->second);
+                    switch (curve_type)
+                    {
+                    case 1/*identical*/:
+                        sur_p_holder = inner_sur_loop_it; sur_p_holder--;
+                        changes.insert({inner_sur_loop_it->first,main_sur_loop_it->first});
+                        curve_loops_map.erase(inner_sur_loop_it->first);
+                        inner_sur_loop_it = sur_p_holder;
+                        inner_sur_loop_end = surface_loops_map.end();
+                        main_sur_loop_end = std::prev(surface_loops_map.end());
+                        break;
+                    case 2/*reversed*/:
+                        sur_p_holder = inner_sur_loop_it; sur_p_holder--;
+                        changes.insert({inner_sur_loop_it->first,-main_sur_loop_it->first});
+                        curve_loops_map.erase(inner_sur_loop_it->first);
+                        inner_sur_loop_it = sur_p_holder;
+                        inner_sur_loop_end = surface_loops_map.end();
+                        main_sur_loop_end = std::prev(surface_loops_map.end());
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+            adjust_surface_loops(changes);
+            changes.clear();
+        }
+        // --- Search for duplicated physical elemements ----
+        // Physical Curves
+        auto pc_m_end = physical_curves_map.end();
+        for ( auto i = physical_curves_map.begin();
+            i != pc_m_end;
+            i++)
+        {
+            std::sort(i->second.begin(),i->second.end());
+            i->second.erase( unique(i->second.begin(),i->second.end() ), i->second.end());
+        }
+        // Physical Surfaces
+        auto ps_m_end = physical_surfaces_map.end();
+        for ( auto i = physical_surfaces_map.begin();
+            i != ps_m_end;
+            i++)
+        {
+            std::sort(i->second.begin(),i->second.end());
+            i->second.erase( unique(i->second.begin(),i->second.end() ), i->second.end());
+        }
+        // Physical Volumes
+        auto pv_m_end = physical_volumes_map.end();
+        for ( auto i = physical_volumes_map.begin();
+            i != pv_m_end;
+            i++)
+        {
+            std::sort(i->second.begin(),i->second.end());
+            i->second.erase( unique(i->second.begin(),i->second.end() ), i->second.end());
+        }
+    }
+}
+
+// Perform coherence check on geofile points.
+// Removes all duplicate points by inverting the points map.
+void GEO::geofile::coherent_points()
+{
+    std::map<point, int> inv_point_map;
+    std::map<int, int> point_adjustment_map;
+    auto pm_it_end = points_map.end();
+    for ( auto pm_it = points_map.begin(); pm_it != pm_it_end; pm_it++)
+    {
+        auto outcome = inv_point_map.insert({pm_it->second, pm_it->first});
+        if (outcome.second==false)
+        {
+            int failed = pm_it->first;                      // get index that failed
+            int reason = inv_point_map.find(pm_it->second)->second;
+            point_adjustment_map.insert({failed, reason});  // add to list of duplicates
+        }
+    }
+    update_points(inv_point_map, point_adjustment_map);
+}
+
+
+// If changes are detected:
+// Clear the points map and repopulate with unique
+// entries, then update dependencies
+void GEO::geofile::update_points(const std::map<point, int> &inv_point_map,
+                                 const std::map<int, int> &point_adjustment_map)
+{
+    if(!point_adjustment_map.empty())
+    {
+        points_map.clear();
+        auto inv_map_end = inv_point_map.end();
+        for (auto inv_map_it = inv_point_map.begin(); inv_map_it != inv_map_end; inv_map_it++)
+        {
+            points_map.insert({inv_map_it->second, inv_map_it->first});
+        }
+        redirect_physical_points(point_adjustment_map);
+        redirect_lines(point_adjustment_map);
+    }
+}
+
+void GEO::geofile::redirect_physical_points(const std::map<int, int> &point_adjustment_map)
+{
+    // Guard against waste of time
+    if ( (!physical_points_map.empty()) && (!point_adjustment_map.empty() ) )
+    {
+        // Look through all physical point names
+        auto phys_p_end = physical_points_map.end();
+        for (auto phys_p_it = physical_points_map.begin(); phys_p_it != phys_p_end; phys_p_it++)
+        {
+            // Look through entire vector of references
+            auto p_vec_begin = phys_p_it->second.begin();
+            auto p_vec_end = phys_p_it->second.end();
+            for ( auto p_vec = p_vec_begin; p_vec != p_vec_end; p_vec++)
+            {
+                auto j = point_adjustment_map.find(*p_vec);
+                if (j != point_adjustment_map.end())
+                    *p_vec = j->second;//redirect old reference to new
+            }
+            // Remove duplicates
+            std::sort(p_vec_begin,p_vec_end);
+            phys_p_it->second.erase(unique(p_vec_begin,p_vec_end), p_vec_end);
+        }
+    }
+}
+
+// looks through all lines for references to duplicate points.
+// adjusts them to point to unique points
+void GEO::geofile::redirect_lines( const std::map<int, int> &point_adjustment_map)
+{
+    if(!point_adjustment_map.empty())
+    {
+        auto lm_end = lines_map.end();
+        for ( auto lm_it = lines_map.begin(); lm_it != lm_end; lm_it++)
+        {
+            auto result = point_adjustment_map.find(lm_it->second.start);
+            if (result != point_adjustment_map.end())
+                lm_it->second.start = result->second;
+            result = point_adjustment_map.find(lm_it->second.end);
+            if (result != point_adjustment_map.end())
+                lm_it->second.end = result->second;
+        }
+    }
+}
+
+// Perform coherence check on geofile lines.
+// Removes all duplicate points by inverting the points map.
+void GEO::geofile::coherent_lines()
+{
+    std::map<opti_line, int> inv_directional_lines_map;
+    std::map<int, int> lines_adjustment_map;
+    // populate directional_lines_map from lines_map
+    auto lm_end = lines_map.end();
+    for ( auto lm_it = lines_map.begin(); lm_it != lm_end; lm_it++)
+    {
+        opti_line incoming_line;
+        incoming_line.low       = lm_it->second.start;
+        incoming_line.high      = lm_it->second.end;
+        incoming_line.reversed  = false;
+        int placeholder;
+        if ( incoming_line.low > incoming_line.high )
+        {
+            placeholder = incoming_line.low;
+            incoming_line.low = incoming_line.high;
+            incoming_line.high = placeholder;
+            incoming_line.reversed = true;
+        }
+        //try to insert the line.
+        auto outcome = inv_directional_lines_map.insert({incoming_line, lm_it->first});
+        if (outcome.second==false)
+        {
+            // high and low is the same. Is the directionality?
+            auto existing_it = inv_directional_lines_map.find(incoming_line);
+            auto existing_is_reversed = existing_it->first.reversed;
+            int sign = (incoming_line.reversed == existing_is_reversed) ?  (1) : (-1) ;
+            // insert the duplicate adjustment
+            lines_adjustment_map.insert({lm_it->first,
+                                         sign*existing_it->second});
+        }
+    }
+    update_lines(lines_adjustment_map);
+}
+
+void GEO::geofile::update_lines( const std::map<int, int> &lines_adjustment_map)
+{
+    if(!lines_adjustment_map.empty())
+    {
+        // actually delete the duplicates from the main map
+        auto lam_end = lines_adjustment_map.end();
+        for ( auto lam_it = lines_adjustment_map.begin(); lam_it != lam_end; lam_it++)
+        {
+            lines_map.erase(lam_it->first);
+        }
+        // Change the curve loops to point to unique elements
+        redirect_curve_loops(lines_adjustment_map);
+    }
+}
+
+void GEO::geofile::redirect_curve_loops(const std::map<int, int> &lines_adjustment_map)
+{
+    if (!lines_adjustment_map.empty())
+    {
+        auto clm_end = curve_loops_map.end();
+        for ( auto clm_it = curve_loops_map.begin(); clm_it != clm_end; clm_it++)
+        {
+            auto cli_end = clm_it->second.end();
+            for ( auto cl_it = clm_it->second.begin(); cl_it != cli_end; cl_it++)
+            {
+                auto result = lines_adjustment_map.find(*cl_it);
+                if(result != lines_adjustment_map.end())
+                    *cl_it = result->second ;
+            }
+        }
+    }
+}
+
+void GEO::geofile::start_timer()
+{
+ start_time = std::chrono::high_resolution_clock::now();
+}
+
+int GEO::geofile::get_microseconds()
+{
+    std::chrono::_V2::system_clock::time_point now = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - start_time);
+    return duration.count();
+}
+
+void GEO::geofile::enable_bool_diff_rest_from_first()
+{
+    bool_diff_rest = true;
+}
+
+// curve physical curve must point to the correct curve loop
+// void GEO::geofile::redirect_physical_curves(const std::map<int, int> &lines_adjustment_map)
+// {
+//     if((!physical_curves_map.empty())&&(!lines_adjustment_map.empty()))
+//     {
+//         auto p_c_m_end  = physical_curves_map.end();
+//         for (auto p_c_m_it = physical_curves_map.begin(); p_c_m_it != p_c_m_end; p_c_m_it++)
+//         {
+//             auto curve_end = p_c_m_it->second.end();
+//             for(auto curve_it = p_c_m_it->second.begin(); curve_it != curve_end; curve_it++)
+//             {
+//                 // lines_adjustment_map.find(*curve_it) TODO
+//             }
+//         }
+//     }
+// }
